@@ -4,8 +4,8 @@ Digitale Escape-Spiele für Mathematik, Klasse 10 (Gymnasium). Jedes Spiel ist e
 
 | Datei | Inhalt | Lösungswort |
 |---|---|---|
-| `teil1-sinussatz.html` | Teil 1: Sinussatz, 8 Räume | DREIECKE |
-| `teil2-sinus-kosinussatz.html` | Teil 2: Sinus- und Kosinussatz im Vergleich, 8 Akten in 3 Stufen | GEOMETER |
+| `teil1/index.html` | Teil 1: Sinussatz, 8 Räume | DREIECKE |
+| `teil2/index.html` | Teil 2: Sinus- und Kosinussatz im Vergleich, 8 Akten in 3 Stufen | GEOMETER |
 | `index.html` | Startseite mit Links zu beiden Teilen | |
 | `vorlagen/` | Planung, Lösungen und Coding-Prompts zu beiden Teilen | |
 
@@ -20,10 +20,14 @@ Bei falschen Antworten gibt es gestufte Hinweise, nie die Lösung.
 
 ## Hinweise für Lehrkräfte
 
-- **Lehrkraft-Modus (Teil 2):** `teil2-sinus-kosinussatz.html?lehrkraft=1` öffnet eine Auswahl, mit der man direkt zu jeder Akte springen kann. Lösungen werden dabei nicht angezeigt.
+- **Lehrkraft-Modus (Teil 2):** `teil2/index.html?lehrkraft=1` öffnet eine Auswahl, mit der man direkt zu jeder Akte springen kann. Lösungen werden dabei nicht angezeigt.
 - **Spielstand:** Er wird nur lokal im Browser gespeichert (localStorage). Es werden keine Daten an einen Server gesendet.
 - **Auswertung:** Am Ende zeigt Teil 2 die Fehlversuche und Tipps pro Akte und eine Selbsteinschätzung. Beides lässt sich als Text kopieren.
 - **Werte ändern:** Alle Aufgaben, Lösungen, Hinweise und typischen Fehlwerte stehen im `ROOMS`-Array am Anfang des Scripts.
+
+## Auf der Website mathe-koenner
+
+Teil 2 wird von der Website mathe-koenner direkt aus diesem Repository übernommen (Ordner `teil2`). Änderungen hier kommen spätestens nach dem nächtlichen Lauf dort an.
 
 ## Online bereitstellen (GitHub Pages)
 
