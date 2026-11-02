@@ -1,0 +1,1238 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Das Vermessungsamt – Teil 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+[hidden]{display:none!important} body{margin:0} img{max-width:100%}
+/* Layout: Feldbuch auf Millimeterpapier. Kopf mit Schlössern, darunter ein Raum als Zeichenblatt: Skizze links, Arbeitsschritte rechts. */
+:root {
+  --paper: #e9eee6;
+  --grid: #d3dbcf;
+  --sheet: #fbfcf8;
+  --ink: #1c2833;
+  --muted: #56636e;
+  --rule: #c4cdc2;
+  --accent: #1d5c88;
+  --accent-soft: #dce8f1;
+  --brass: #9a5f0c;
+  --brass-soft: #f5e8d2;
+  --ok: #2c7a4b;
+  --ok-soft: #dcefe2;
+  --water: #cfe1ee;
+  --font-display: "Zilla Slab", "Rockwell", Georgia, serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11181e; --grid: #1b252d; --sheet: #172129; --ink: #e3e9e5; --muted: #9caab3;
+    --rule: #2b3842; --accent: #74b4e0; --accent-soft: #1d3446; --brass: #e2aa52; --brass-soft: #3a2c16;
+    --ok: #6ec48f; --ok-soft: #1a3526; --water: #1c3445; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11181e; --grid: #1b252d; --sheet: #172129; --ink: #e3e9e5; --muted: #9caab3;
+  --rule: #2b3842; --accent: #74b4e0; --accent-soft: #1d3446; --brass: #e2aa52; --brass-soft: #3a2c16;
+  --ok: #6ec48f; --ok-soft: #1a3526; --water: #1c3445; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 18px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.brand .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 5vw, 40px); line-height: 1.05; margin: 2px 0 0; text-wrap: balance; }
+.tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.clock { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 15px; color: var(--muted); background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; }
+button, .btn { font: inherit; cursor: pointer; }
+.btn { background: var(--accent); color: var(--sheet); border: 0; border-radius: 6px; padding: 10px 18px; font-weight: 700; }
+.btn:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--rule); font-weight: 600; padding: 6px 12px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+/* Schlossleiste */
+.locks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.lock { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 4px 6px; text-align: center; display: grid; gap: 2px; justify-items: center; }
+@media (max-width: 560px) { .lock .lbl { display: none; } }
+.lock .num { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.lock .face { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1; height: 24px; display: grid; place-items: center; color: var(--muted); }
+.lock .face svg { width: 18px; height: 20px; }
+.lock.current { border-color: var(--brass); box-shadow: inset 0 -3px 0 var(--brass); }
+.lock.current .face { color: var(--brass); }
+.lock.open { background: var(--ok-soft); border-color: var(--ok); }
+.lock.open .face { color: var(--ok); }
+
+/* Raumblatt */
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: clamp(16px, 3vw, 28px); display: grid; gap: 16px; }
+.room-head .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass); }
+.room-head h2 { font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 4vw, 30px); margin: 2px 0 6px; text-wrap: balance; }
+.story { margin: 0; max-width: 65ch; }
+.given { margin: 0; font-weight: 600; border-left: 3px solid var(--accent); padding-left: 10px; max-width: 65ch; }
+.room-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 22px; align-items: start; }
+@media (max-width: 760px) { .room-body { grid-template-columns: minmax(0, 1fr); } }
+figure.sketch { margin: 0; border: 1px dashed var(--rule); border-radius: 8px; padding: 8px; background: var(--sheet); position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); }
+@media (max-width: 760px) { figure.sketch { position: static; } }
+figure.sketch svg { width: 100%; height: auto; display: block; }
+figure.sketch figcaption { font-size: 13px; color: var(--muted); padding: 4px 4px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.key i { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--accent); }
+.key i.ask { border-top: 3px dashed var(--brass); }
+
+svg .s-given { stroke: var(--accent); stroke-width: 3.2; }
+svg .s-ask { stroke: var(--brass); stroke-width: 3.2; stroke-dasharray: 7 5; }
+svg .s-plain { stroke: var(--ink); stroke-width: 2; }
+svg .s-faint { stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 5; fill: none; }
+svg .t-given { fill: var(--accent); font-weight: 700; }
+svg .t-ask { fill: var(--brass); font-weight: 700; }
+svg .t-plain { fill: var(--muted); }
+svg .t-vert { fill: var(--ink); font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+svg text { font-family: var(--font-body); font-size: 14.5px; pointer-events: none; paint-order: stroke; stroke: var(--sheet); stroke-width: 4px; stroke-linejoin: round; }
+svg .arc-given { stroke: var(--accent); fill: none; stroke-width: 2; }
+svg .arc-ask { stroke: var(--brass); fill: none; stroke-width: 2; }
+svg .arc-plain { stroke: var(--muted); fill: none; stroke-width: 1.4; }
+svg .water { fill: var(--water); }
+svg .pickable { cursor: pointer; }
+svg .pickable:hover .vis, svg .pickable:focus-visible .vis { stroke: var(--brass); stroke-width: 5; }
+svg .pickable:focus { outline: none; }
+svg .pickable.wrong .vis { stroke: var(--brass); stroke-dasharray: 3 4; }
+
+/* Schritte */
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.step { border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.step.done { border-style: dashed; padding: 8px 14px; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.step.done .check { color: var(--ok); font-weight: 700; }
+.step.active { border-color: var(--accent); box-shadow: 0 1px 0 var(--rule); }
+.tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 7px; justify-self: start; }
+.tag.t-Prüfen { color: var(--ok); background: var(--ok-soft); }
+.tag.t-Rechnen { color: var(--brass); background: var(--brass-soft); }
+.q { margin: 0; font-weight: 600; }
+fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+legend { font-weight: 600; padding: 0; margin-bottom: 6px; }
+.opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.opt:hover { border-color: var(--accent); }
+.opt input { margin-top: 4px; accent-color: var(--accent); flex: none; }
+.opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.num-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.num-field { display: flex; align-items: center; gap: 6px; }
+.num-field label { font-weight: 600; }
+.num-field input { font-family: var(--font-mono); font-size: 18px; width: 9ch; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--ink); font-variant-numeric: tabular-nums; }
+.num-field .unit { color: var(--muted); }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.fb { border-radius: 6px; padding: 10px 12px; font-size: 16px; }
+.fb:empty { display: none; }
+.fb.hint { background: var(--brass-soft); border-left: 4px solid var(--brass); }
+.fb.hint b { color: var(--brass); }
+.fb.info { background: var(--accent-soft); border-left: 4px solid var(--accent); }
+
+/* Zuordnung */
+.pool, .zone-list { display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; }
+.pool { border: 1px dashed var(--rule); border-radius: 8px; padding: 8px; }
+.card { background: var(--sheet); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; font-family: var(--font-mono); font-size: 14px; text-align: left; }
+.card[aria-pressed="true"] { border-color: var(--brass); background: var(--brass-soft); }
+.card.wrong { border-color: var(--brass); border-style: dashed; }
+.zones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .zones { grid-template-columns: minmax(0, 1fr); } }
+.zone { border: 2px solid var(--rule); border-radius: 8px; padding: 8px; display: grid; gap: 6px; align-content: start; cursor: pointer; background: var(--sheet); min-width: 0; }
+.zone .zt { font-weight: 700; font-size: 15px; }
+.zone.target { border-color: var(--brass); }
+.zone.over { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Schloss offen */
+.reveal { border: 2px solid var(--ok); background: var(--ok-soft); border-radius: 10px; padding: 16px 18px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.reveal .letter { font-family: var(--font-display); font-weight: 700; font-size: 56px; line-height: 1; color: var(--ok); width: 72px; height: 72px; display: grid; place-items: center; border: 2px solid var(--ok); border-radius: 8px; background: var(--sheet); animation: pop .5s ease-out; }
+.reveal p { margin: 0; }
+@keyframes pop { from { transform: scale(.6) rotate(-8deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .reveal .letter { animation: none; } }
+
+/* Tür, Abschluss */
+.letters { display: flex; gap: 6px; flex-wrap: wrap; }
+.letters span { font-family: var(--font-display); font-weight: 700; font-size: 28px; width: 44px; height: 50px; display: grid; place-items: center; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); }
+.word-input { font-family: var(--font-display); font-size: 24px; letter-spacing: .2em; text-transform: uppercase; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; width: min(100%, 16ch); background: var(--sheet); color: var(--ink); }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--rule); }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+td.n { text-align: right; font-family: var(--font-mono); }
+.scale { display: grid; gap: 10px; }
+.scale .item { display: grid; gap: 6px; }
+.scale .opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.scale label { border: 1px solid var(--rule); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 15px; }
+.scale label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); }
+.scale input { accent-color: var(--accent); }
+
+details.formulas { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 16px; }
+details.formulas summary { cursor: pointer; font-weight: 700; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; padding-top: 10px; }
+.fgrid div { min-width: 0; }
+.fgrid h3 { font-family: var(--font-display); font-size: 17px; margin: 0 0 4px; }
+.fgrid p { margin: 0; font-family: var(--font-mono); font-size: 14px; }
+.fgrid small { color: var(--muted); font-family: var(--font-body); font-size: 13px; }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 15px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ===== Ergänzungen für Teil 2: Stufenfarben, Start- und Zwischenkarten, Tipps, berechnete Werte ===== */
+:root { --st1: #1d5c88; --st2: #9a5f0c; --st3: #7b3d72; --st3-soft: #f1e1ee; --grass: #e1eedb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --st1: #74b4e0; --st2: #e2aa52; --st3: #d595c9; --st3-soft: #3a2236; --grass: #1a2b1f; }
+}
+:root[data-theme="dark"] { --st1: #74b4e0; --st2: #e2aa52; --st3: #d595c9; --st3-soft: #3a2236; --grass: #1a2b1f; }
+
+.lock { border-top-width: 4px; }
+.lock[data-stage="1"] { border-top-color: var(--st1); }
+.lock[data-stage="2"] { border-top-color: var(--st2); }
+.lock[data-stage="3"] { border-top-color: var(--st3); }
+.stagekey { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--muted); margin-top: -8px; }
+.stagekey span { display: inline-flex; align-items: center; gap: 6px; }
+.stagekey i { width: 14px; height: 4px; border-radius: 2px; display: inline-block; }
+.stagekey .cur { color: var(--ink); font-weight: 700; }
+
+.room-head .eyebrow .stg { border-radius: 4px; padding: 1px 7px; margin-left: 6px; color: var(--sheet); }
+.stg1 { background: var(--st1); } .stg2 { background: var(--st2); } .stg3 { background: var(--st3); }
+.intro { display: grid; gap: 14px; max-width: 68ch; }
+.intro p { margin: 0; }
+.intro .bigstage { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 5vw, 36px); margin: 0; line-height: 1.1; }
+.intro ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.stagecard { border-left: 6px solid var(--st1); padding-left: 16px; }
+.stagecard.s2 { border-left-color: var(--st2); }
+.stagecard.s3 { border-left-color: var(--st3); }
+
+.step .actions .tip { margin-left: auto; }
+.card { font-family: var(--font-body); font-size: 15px; line-height: 1.35; max-width: 100%; }
+.zones { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+@media (max-width: 560px) { .zones { grid-template-columns: minmax(0, 1fr); } }
+.fb.ok { background: var(--ok-soft); border-left: 4px solid var(--ok); }
+.fb .more { display: block; margin-top: 6px; }
+
+figure.sketch figcaption .key i.calc { border-top: 3px solid var(--ok); }
+svg .s-calc { stroke: var(--ok); stroke-width: 3.2; }
+svg .t-calc { fill: var(--ok); font-weight: 700; }
+svg .arc-calc { stroke: var(--ok); fill: none; stroke-width: 2; }
+svg .grass { fill: var(--grass); }
+svg .net { fill: none; stroke: var(--muted); stroke-width: 1; }
+svg .post { fill: var(--ink); }
+svg .island { fill: var(--grass); stroke: var(--ok); stroke-width: 1.5; }
+svg .hl1 { fill: var(--accent-soft); }
+svg .hl2 { fill: var(--st3-soft); }
+svg .dot { fill: var(--brass); }
+svg .dot.ok { fill: var(--ok); }
+svg .dot.off { fill: var(--muted); opacity: .45; }
+svg .grow { stroke-dasharray: 600; stroke-dashoffset: 600; animation: grow 1.4s ease-out forwards; }
+svg .fade { opacity: 0; animation: fade .5s ease-out 1.2s forwards; }
+@keyframes grow { to { stroke-dashoffset: 0; } }
+@keyframes fade { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { svg .grow { animation: none; stroke-dashoffset: 0; stroke-dasharray: none; } svg .fade { animation: none; opacity: 1; } }
+
+.teacher { display: flex; align-items: center; gap: 6px; font-size: 14px; background: var(--brass-soft); border: 1px solid var(--brass); border-radius: 6px; padding: 4px 8px; }
+.teacher select { font: inherit; padding: 2px 4px; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule); border-radius: 4px; }
+td.stage-cell { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.tag.t-Modellieren { color: var(--st3); background: var(--st3-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="eyebrow">Escape-Spiel · Sinus- und Kosinussatz · Klasse 10</div>
+      <h1>Das Vermessungsamt – Teil 2</h1>
+    </div>
+    <div class="tools">
+      <span id="teacherBox"></span>
+      <span class="clock" id="clock" aria-label="Verstrichene Zeit">00:00</span>
+      <span id="restartBox"><button class="btn ghost" id="restart" type="button">Neu starten</button></span>
+    </div>
+  </header>
+
+  <ol class="locks" id="locks" aria-label="Fortschritt: acht Akten"></ol>
+  <div class="stagekey" id="stagekey"></div>
+
+  <main class="sheet" id="main" tabindex="-1"></main>
+
+  <details class="formulas">
+    <summary>Formelkarte aufklappen</summary>
+    <div class="fgrid">
+      <div><h3>Sinussatz</h3><p>a / sin α = b / sin β = c / sin γ</p><small>Braucht ein vollständiges Paar aus Seite und Gegenwinkel.</small></div>
+      <div><h3>Kosinussatz (Seite)</h3><p>a² = b² + c² − 2·b·c·cos α</p><small>Zwei Seiten und der eingeschlossene Winkel sind bekannt.</small></div>
+      <div><h3>Kosinussatz (Winkel)</h3><p>cos α = (b² + c² − a²) / (2·b·c)</p><small>Alle drei Seiten sind bekannt.</small></div>
+      <div><h3>Winkelsumme</h3><p>α + β + γ = 180°</p><small>Gegenüber der größten Seite liegt der größte Winkel.</small></div>
+      <div><h3>Entscheidungshilfe</h3><p>SSS, SWS → Kosinussatz<br>WSW, SsW → Sinussatz</p><small>SsW: Liegt der Winkel der kürzeren Seite gegenüber, kann es zwei Lösungen geben.</small></div>
+    </div>
+  </details>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+const D2R = Math.PI / 180;
+const RAD = 'Dein Ergebnis sieht aus, als stünde der Taschenrechner im Bogenmaß (RAD). Stell ihn auf Grad (DEG) um und rechne noch einmal.';
+const INV = 'Das ist der Sinus- bzw. Kosinuswert. Um den Winkel selbst zu erhalten, brauchst du die Taste sin⁻¹ bzw. cos⁻¹.';
+
+/* Wiederkehrende Auswahl für „Verfahren wählen und begründen“ */
+const METHODS = [
+  { k: 'sin', t: 'Sinussatz' },
+  { k: 'cos', t: 'Kosinussatz' },
+  { k: 'rw', t: 'sin, cos, tan im rechtwinkligen Dreieck' }
+];
+const REASONS = [
+  { k: 'paar', t: 'Ein vollständiges Paar aus Seite und Gegenwinkel und eine weitere Größe sind bekannt.' },
+  { k: 'sws', t: 'Zwei Seiten und der von ihnen eingeschlossene Winkel sind bekannt.' },
+  { k: 'sss', t: 'Alle drei Seiten sind bekannt.' },
+  { k: 'rwk', t: 'Das Dreieck hat einen rechten Winkel.' }
+];
+const DECIDE_HINTS = [
+  'Sieh dir an, welche Größen gegeben sind und welche einander gegenüberliegen.',
+  'Der Sinussatz braucht ein vollständiges Paar aus Seite und Gegenwinkel. Der Kosinussatz passt, wenn zwei Seiten und der eingeschlossene Winkel oder alle drei Seiten bekannt sind.',
+  'Entscheidungshilfe: SSS oder SWS → Kosinussatz. WSW oder SsW → Sinussatz.'
+];
+const RW_HINT = 'Ist hier wirklich ein Winkel von 90° bekannt? Prüfe die gegebenen Winkel.';
+
+const STAGES = [
+  null,
+  { name: 'Stufe I', title: 'Anwenden', text: 'In den ersten drei Akten passt jeweils genau ein Satz. Finde heraus, welcher, und wende ihn sauber an.' },
+  { name: 'Stufe II', title: 'Entscheiden', text: 'Jetzt musst du selbst entscheiden, welcher Satz passt. Manche Akten brauchen zwei Rechenschritte, und in einer Akte ist eine Falle versteckt.' },
+  { name: 'Stufe III', title: 'Kombinieren und Modellieren', text: 'In den letzten beiden Akten brauchst du beide Sätze in einer Aufgabe. Am Ende liefert die Mathematik zwei Möglichkeiten, und die Sachsituation entscheidet.' }
+];
+
+/* ===== Raumdaten: Werte, Fragen, Hinweise und Fehlwerte lassen sich hier anpassen =====
+   Schritt-Typen: pick (Seite in der Skizze antippen), choice (Auswahl), decide (Verfahren + Begründung),
+   number (eine Zahl), multi (mehrere Zahlen, Reihenfolge egal), sort (Zuordnung).
+   specials: typische Fehlwerte mit gezieltem Hinweis. also: weitere korrekte Verfahrenswahl.
+   sketch.labels: Beschriftungen [Text, Stil]; sketch.updates: Beschriftung ändert sich, sobald Schritt „after“ gelöst ist. */
+const ROOMS = [
+  {
+    stage: 1, letter: 'G', title: 'Der neue Zaun',
+    story: 'Die erste Akte gehört zu einem Bauernhof. Der Besitzer will sein dreieckiges Grundstück einzäunen, aber eine Grenze wurde nie vermessen.',
+    given: 'An der Ecke A treffen zwei Grenzen von 45 m und 62 m Länge zusammen. Sie schließen einen Winkel von 74° ein. Wie lang muss der Zaun an der dritten Grenze werden?',
+    sketch: { draw: 'tri', A: 74, B: 41.14,
+      labels: { a: ['BC = ?', 'ask'], b: ['45 m', 'given'], c: ['62 m', 'given'], A: ['74°', 'given'], B: ['', 'plain'], C: ['', 'plain'] },
+      updates: [{ after: 3, key: 'a', t: 'BC ≈ 65,81 m', st: 'calc' }] },
+    steps: [
+      { type: 'choice', tag: 'Ordnen', q: 'Wo liegt der bekannte Winkel von 74°?',
+        options: [
+          { t: 'zwischen den beiden bekannten Seiten', ok: true },
+          { t: 'gegenüber der Seite mit 45 m', hint: 'Der Winkel sitzt in der Ecke A. Berührt die 45-m-Seite die Ecke A?' },
+          { t: 'gegenüber der Seite mit 62 m', hint: 'Der Winkel sitzt in der Ecke A. Berührt die 62-m-Seite die Ecke A?' }
+        ],
+        hints: ['Liegt der bekannte Winkel zwischen den bekannten Seiten oder einer Seite gegenüber?', 'Beide Grenzen beginnen an der Ecke A, und genau dort liegt der Winkel.', 'Ein Winkel, den zwei Seiten bilden, heißt eingeschlossener Winkel.'],
+        done: 'Der Winkel 74° ist eingeschlossen (SWS).' },
+      { type: 'choice', tag: 'Ordnen', q: 'Ist ein vollständiges Paar aus Seite und Gegenwinkel bekannt?',
+        options: [
+          { t: 'Nein, keiner bekannten Seite liegt ein bekannter Winkel gegenüber.', ok: true },
+          { t: 'Ja, 45 m und 74°.', hint: 'Liegt der 74°-Winkel der 45-m-Seite gegenüber, oder berührt die Seite die Ecke A?' },
+          { t: 'Ja, 62 m und 74°.', hint: 'Liegt der 74°-Winkel der 62-m-Seite gegenüber, oder berührt die Seite die Ecke A?' }
+        ],
+        hints: ['Ein Paar besteht aus einer Seite und dem Winkel in der Ecke, die die Seite nicht berührt.', 'Dem Winkel bei A liegt die gesuchte Seite BC gegenüber.', 'Die gesuchte Seite gehört zum einzigen bekannten Winkel. Ein vollständiges Paar gibt es also nicht.'],
+        done: 'Kein vollständiges Paar bekannt.' },
+      { type: 'decide', tag: 'Entscheiden', method: 'cos', reason: 'sws',
+        mhints: { sin: 'Für den Sinussatz brauchst du ein vollständiges Paar. Das gibt es hier nicht.', rw: RW_HINT },
+        done: 'Kosinussatz, weil zwei Seiten und der eingeschlossene Winkel bekannt sind.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne die Länge der dritten Grenze auf zwei Nachkommastellen.', answers: [65.81], tol: 0.1, unit: 'm', label: 'BC =',
+        specials: [{ v: 4330.94, tol: 1, hint: 'Das ist BC². Hast du am Ende die Wurzel gezogen?' }, { v: 70.08, tol: 0.05, hint: RAD }, { v: 76.61, tol: 0.05, hint: 'So lang wäre die Grenze bei einem rechten Winkel. Du hast den Teil −2·b·c·cos α vergessen.' }],
+        hints: ['Liegt der bekannte Winkel zwischen den bekannten Seiten oder gegenüber?', 'a² = b² + c² − 2bc · cos α, hier also BC² = 45² + 62² − 2 · 45 · 62 · cos 74°.', 'Rechne im Gradmaß (DEG) und zieh am Ende die Wurzel.'],
+        done: 'BC ≈ 65,81 m' },
+      { type: 'choice', tag: 'Prüfen', q: 'Bei einem rechten Winkel wäre der Zaun √(45² + 62²) ≈ 76,6 m lang. Muss er bei 74° kürzer oder länger sein?',
+        options: [
+          { t: 'Kürzer, weil 74° kleiner als 90° ist und die Ecke damit „enger“ wird.', ok: true },
+          { t: 'Länger, weil 74° ein großer Winkel ist.', hint: 'Stell dir vor, du klappst die beiden Grenzen weiter zusammen. Wird der Abstand der Enden größer oder kleiner?' },
+          { t: 'Genau gleich lang, der Winkel spielt keine Rolle.', hint: 'Im Kosinussatz steht der Winkel im Term −2bc · cos α. Bei 90° fällt dieser Term weg, bei 74° nicht.' }
+        ],
+        hints: ['Für Winkel unter 90° ist cos α positiv. Was bedeutet das für den Term −2bc · cos α?'],
+        done: 'Plausibel: 65,81 m < 76,6 m, weil 74° < 90°.' }
+    ]
+  },
+  {
+    stage: 1, letter: 'E', title: 'Der Dachstuhl',
+    story: 'Die zweite Akte stammt von einer Zimmerei. Für ein asymmetrisches Dach fehlt auf dem Plan der Winkel am First. Ohne ihn kann niemand die Sparren zuschneiden.',
+    given: 'Die beiden Dachsparren sind 5,2 m und 6,8 m lang, die Spannweite unten beträgt 9,5 m. Welcher Winkel γ entsteht am First F?',
+    sketch: { draw: 'tri', A: 32.08, B: 44.03, names: ['A', 'B', 'F'],
+      labels: { a: ['5,2 m', 'given'], b: ['6,8 m', 'given'], c: ['Spannweite 9,5 m', 'given'], A: ['', 'plain'], B: ['', 'plain'], C: ['γ = ?', 'ask'] },
+      updates: [{ after: 2, key: 'C', t: 'γ ≈ 103,9°', st: 'calc' }] },
+    steps: [
+      { type: 'pick', tag: 'Ordnen', q: 'Drei Seiten sind bekannt (SSS). Welche Seite liegt dem Firstwinkel γ gegenüber? Tippe sie in der Skizze an.', answer: 'c',
+        hints: ['Welche Seite liegt dem Firstwinkel gegenüber?', 'Gegenüber heißt: Die Seite berührt die Ecke F nicht.', 'Die beiden Sparren treffen sich im First. Die dritte Seite ist es.'],
+        done: 'Die Spannweite liegt γ gegenüber.' },
+      { type: 'decide', tag: 'Entscheiden', method: 'cos', reason: 'sss',
+        mhints: { sin: 'Für den Sinussatz brauchst du ein vollständiges Paar. Hier ist noch gar kein Winkel bekannt.', rw: RW_HINT },
+        done: 'Kosinussatz, nach dem Winkel umgestellt, weil alle drei Seiten bekannt sind.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne den Winkel am First auf eine Nachkommastelle.', answers: [103.88], tol: 0.2, unit: '°', label: 'γ =',
+        specials: [{ v: 76.12, tol: 0.2, hint: 'Prüfe das Vorzeichen im Zähler: Die Seite, die γ gegenüberliegt, wird abgezogen.' }, { v: -0.24, tol: 0.005, hint: INV }, { v: 1.813, tol: 0.01, hint: RAD }],
+        hints: ['Welche Seite liegt dem Firstwinkel gegenüber? Sie steht im Zähler mit Minus.', 'cos γ = (a² + b² − c²) / (2ab), hier cos γ = (5,2² + 6,8² − 9,5²) / (2 · 5,2 · 6,8).', 'Ein negativer Kosinuswert ist kein Fehler, er bedeutet einen stumpfen Winkel. Wende cos⁻¹ an.'],
+        done: 'γ ≈ 103,9°' },
+      { type: 'choice', tag: 'Prüfen', q: 'Warum ist der Winkel am First stumpf?',
+        options: [
+          { t: 'Weil 9,5² größer ist als 5,2² + 6,8² (90,25 > 73,28). Dann ist cos γ < 0.', ok: true },
+          { t: 'Weil die Spannweite länger als jeder einzelne Sparren ist.', hint: 'Das allein reicht nicht: Auch bei 5 m, 6 m und 7 m ist die längste Seite länger als jede andere, und trotzdem sind alle Winkel spitz.' },
+          { t: 'Weil das Dach asymmetrisch ist.', hint: 'Auch ein asymmetrisches Dach kann einen spitzen Firstwinkel haben. Vergleiche c² mit a² + b².' }
+        ],
+        hints: ['Wäre c² genau a² + b², hätte das Dreieck einen rechten Winkel (Pythagoras). Was passiert, wenn c² größer ist?'],
+        done: 'Stumpf, weil c² > a² + b² und damit cos γ < 0.' }
+    ]
+  },
+  {
+    stage: 1, letter: 'O', title: 'Die Insel im Bergsee',
+    story: 'Die dritte Akte ist eine alte Seekarte. Zu einer kleinen Insel soll ein Badesteg gebaut werden. Hinüberschwimmen und messen geht nicht, peilen schon.',
+    given: 'Die Messpunkte A und B am Ufer liegen 850 m auseinander. Von A aus erscheint die Insel C unter 52°, von B aus unter 67°, jeweils gemessen zur Strecke AB. Wie weit ist die Insel von A entfernt?',
+    sketch: { draw: 'tri', A: 52, B: 67, sea: true, island: true,
+      labels: { a: ['', 'plain'], b: ['AC = ?', 'ask'], c: ['850 m', 'given'], A: ['52°', 'given'], B: ['67°', 'given'], C: ['γ', 'plain'] },
+      updates: [{ after: 0, key: 'C', t: '61°', st: 'calc' }, { after: 3, key: 'b', t: 'AC ≈ 894,59 m', st: 'calc' }] },
+    steps: [
+      { type: 'number', tag: 'Ordnen', q: 'Bestimme zuerst den Winkel γ bei der Insel C.', answers: [61], tol: 0.1, unit: '°', label: 'γ =',
+        hints: ['Welcher Winkel fehlt noch? Denk an die Winkelsumme.', 'Im Dreieck ABC gilt α + β + γ = 180°.', 'Rechne 180° − 52° − 67°.'],
+        done: 'γ = 61°' },
+      { type: 'choice', tag: 'Ordnen', q: 'Welcher Winkel liegt der gesuchten Strecke AC gegenüber?',
+        options: [
+          { t: 'der Winkel bei A (52°)', hint: 'A ist ein Endpunkt der Strecke AC. Gegenüber liegt die Ecke, die die Strecke nicht berührt.' },
+          { t: 'der Winkel bei B (67°)', ok: true },
+          { t: 'der Winkel bei C (61°)', hint: 'C ist ein Endpunkt der Strecke AC. Welche Ecke berührt sie nicht?' }
+        ],
+        hints: ['Welcher Winkel liegt AC gegenüber?', 'Die Strecke AC verbindet A und C. Die dritte Ecke liegt ihr gegenüber.'],
+        done: 'AC liegt dem Winkel β = 67° gegenüber.' },
+      { type: 'decide', tag: 'Entscheiden', method: 'sin', reason: 'paar',
+        mhints: { cos: 'Du kennst nur eine Seite, nämlich AB. Für den Kosinussatz bräuchtest du mindestens zwei.', rw: 'Keiner der drei Winkel beträgt 90°.' },
+        done: 'Sinussatz mit dem vollständigen Paar AB = 850 m und γ = 61°.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne die Entfernung AC auf zwei Nachkommastellen.', answers: [894.59], tol: 0.1, unit: 'm', label: 'AC =',
+        specials: [{ v: 765.83, tol: 0.2, hint: 'Liegt 52° wirklich AC gegenüber? Du hast den Winkel bei A verwendet.' }, { v: 752.69, tol: 0.5, hint: RAD }, { v: 807.6, tol: 0.5, hint: 'Hast du Zähler und Nenner vertauscht? Die gesuchte Seite gehört zu sin 67°.' }],
+        hints: ['Welcher Winkel liegt AC gegenüber? Er gehört in den Zähler.', 'Das vollständige Paar ist AB = 850 m mit γ = 61°.', 'AC / sin 67° = 850 / sin 61°, also AC = 850 · sin 67° / sin 61°.'],
+        done: 'AC ≈ 894,59 m' },
+      { type: 'choice', tag: 'Prüfen', q: 'Ist AC länger als AB? Prüfe mit den gegenüberliegenden Winkeln.',
+        options: [
+          { t: 'Ja, weil der Gegenwinkel von AC (67°) größer ist als der Gegenwinkel von AB (61°).', ok: true },
+          { t: 'Nein, weil 52° kleiner als 61° ist.', hint: 'Der Winkel 52° sitzt in A und liegt AC nicht gegenüber.' },
+          { t: 'Das kann man ohne Rechnung nicht sagen.', hint: 'Im Dreieck gilt: Je größer der Winkel, desto länger die gegenüberliegende Seite.' }
+        ],
+        hints: ['Vergleiche die Gegenwinkel der beiden Strecken.'],
+        done: 'Plausibel: 67° > 61°, also AC > AB.' }
+    ]
+  },
+  {
+    stage: 2, letter: 'M', title: 'Die Aktensortierung',
+    story: 'Im Archiv liegt ein Stapel ungeordneter Aufträge. Das Schloss des Aktenschranks öffnet sich erst, wenn jeder Auftrag im richtigen Fach liegt. Gerechnet wird hier nicht.',
+    given: 'Ordne jede Situation dem Verfahren zu, mit dem du die gesuchte Größe am besten berechnest.',
+    sketch: null,
+    steps: [
+      { type: 'sort', tag: 'Entscheiden', q: 'Tippe einen Auftrag an und danach das passende Fach. Am Computer kannst du die Karten auch ziehen, mit der Tastatur wählst du mit Tab und Enter.',
+        zones: [
+          { k: 'rw', t: 'Rechtwinkliges Dreieck (sin/cos/tan)' },
+          { k: 'sws', t: 'Kosinussatz (SWS)' },
+          { k: 'sss', t: 'Kosinussatz (SSS)' },
+          { k: 'wsw', t: 'Sinussatz (WSW)' },
+          { k: 'ssw', t: 'Sinussatz – Vorsicht, evtl. zwei Lösungen (SsW)' }
+        ],
+        cards: [
+          { t: 'Eine 6 m lange Leiter lehnt unter 70° an einer senkrechten Wand. Wie hoch reicht sie?', z: ['rw'] },
+          { t: 'Zwei Wanderwege gehen von einer Kreuzung ab (3,2 km und 4,5 km) und bilden 58°. Wie weit liegen die Enden auseinander?', z: ['sws'] },
+          { t: 'Ein dreieckiges Segel hat die Seiten 4 m, 5 m und 6 m. Wie groß ist der Winkel am Mast?', z: ['sss'] },
+          { t: 'Zwei Förster peilen ein Feuer von den Enden einer 2 km langen Strecke unter 48° und 71° an. Wie weit ist das Feuer entfernt?', z: ['wsw'] },
+          { t: 'Ein Stützbalken: Zwei Seiten sind bekannt und der Winkel gegenüber der kürzeren Seite.', z: ['ssw'] }
+        ],
+        hints: ['Gibt es einen rechten Winkel? Eine senkrechte Wand steht im rechten Winkel zum Boden.', 'Ist ein Paar aus Seite und gegenüberliegendem Winkel vollständig? Bei zwei Winkeln kannst du den dritten über die Winkelsumme ergänzen.', 'Liegt der bekannte Winkel zwischen den Seiten oder einer Seite gegenüber?'],
+        done: 'Alle Aufträge liegen im richtigen Fach.' }
+    ]
+  },
+  {
+    stage: 2, letter: 'E', title: 'Der Schusswinkel',
+    story: 'Die nächste Akte kommt vom Sportverein. Der Trainer will wissen, wie groß das Tor von einem bestimmten Punkt aus „aussieht“. Je größer der Schusswinkel, desto leichter der Treffer.',
+    given: 'Der Ball liegt 16 m vom linken Pfosten L entfernt. Die Verbindung Ball–linker Pfosten bildet mit der Torlinie einen Winkel von 72°. Das Tor ist 7,32 m breit. Unter welchem Winkel „sieht“ der Ball das Tor (Schusswinkel)?',
+    sketch: { draw: 'tri', A: 72, B: 81.13, names: ['L', 'R', 'Ball'], goal: true,
+      labels: { a: ['? m', 'ask'], b: ['16 m', 'given'], c: ['7,32 m', 'given'], A: ['72°', 'given'], B: ['', 'plain'], C: ['?', 'ask'] },
+      updates: [{ after: 2, key: 'a', t: '≈ 15,40 m', st: 'calc' }, { after: 4, key: 'C', t: '≈ 26,9°', st: 'calc' }] },
+    steps: [
+      { type: 'choice', tag: 'Ordnen', q: 'Schritt 1: Du brauchst zuerst den Abstand Ball–rechter Pfosten. Wo liegt der 72°-Winkel im Dreieck Ball–L–R?',
+        options: [
+          { t: 'zwischen den Seiten 16 m und 7,32 m', ok: true },
+          { t: 'gegenüber der Seite 16 m', hint: 'Der Winkel sitzt am linken Pfosten L. Berührt die 16-m-Strecke den Punkt L?' },
+          { t: 'gegenüber der Torbreite 7,32 m', hint: 'Die Torlinie beginnt am linken Pfosten L, genau dort, wo der 72°-Winkel liegt.' }
+        ],
+        hints: ['Zeichne das Dreieck Ball–linker Pfosten–rechter Pfosten.', 'Der 72°-Winkel liegt zwischen 16 m und 7,32 m.'],
+        done: 'Der 72°-Winkel ist eingeschlossen (SWS).' },
+      { type: 'decide', tag: 'Entscheiden', method: 'cos', reason: 'sws',
+        mhints: { sin: 'Ist ein vollständiges Paar bekannt? Dem 72°-Winkel liegt die gesuchte Seite gegenüber.', rw: RW_HINT },
+        done: 'Schritt 1: Kosinussatz (SWS).' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne den Abstand Ball–rechter Pfosten auf zwei Nachkommastellen.', answers: [15.40], tol: 0.1, unit: 'm', label: 'Abstand =',
+        specials: [{ v: 237.2, tol: 0.5, hint: 'Das ist das Quadrat des Abstands. Ziehe noch die Wurzel.' }, { v: 23.15, tol: 0.05, hint: RAD }],
+        hints: ['Der 72°-Winkel liegt zwischen 16 m und 7,32 m.', 'Abstand² = 16² + 7,32² − 2 · 16 · 7,32 · cos 72°.', 'Rechne im Gradmaß und ziehe am Ende die Wurzel.'],
+        done: 'Abstand Ball–rechter Pfosten ≈ 15,40 m' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Schritt 2: Mit welchem Verfahren bestimmst du jetzt den Schusswinkel?', method: 'sin', reason: 'paar',
+        also: [['cos', 'sss']], alsoDone: 'Schritt 2: Kosinussatz (SSS) geht auch. Der Sinussatz ist mit dem Paar 15,40 m und 72° etwas kürzer.',
+        mhints: { rw: RW_HINT },
+        done: 'Schritt 2: Sinussatz, weil jetzt 15,40 m und 72° ein vollständiges Paar bilden.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne den Schusswinkel auf eine Nachkommastelle.', answers: [26.87], tol: 0.2, unit: '°', label: 'Schusswinkel =',
+        specials: [{ v: 0.452, tol: 0.005, hint: INV }, { v: 81.13, tol: 0.2, hint: 'Das ist der Winkel am rechten Pfosten. Gesucht ist der Winkel am Ball, also der Winkel gegenüber der Torbreite.' }, { v: 153.13, tol: 0.2, hint: 'Ein stumpfer Schusswinkel ist nicht möglich: Zusammen mit 72° wären es schon über 180°.' }],
+        hints: ['Für Schritt 2: Welche Seite liegt dem Schusswinkel gegenüber?', 'Der Torbreite 7,32 m liegt der Schusswinkel gegenüber, den 15,40 m der Winkel 72°.', 'sin(Schusswinkel) = 7,32 · sin 72° / 15,40. Wende danach sin⁻¹ an.'],
+        done: 'Schusswinkel ≈ 26,9°' },
+      { type: 'choice', tag: 'Prüfen', q: 'Musst du hier mit einer zweiten Lösung für den Schusswinkel rechnen?',
+        options: [
+          { t: 'Nein. Die Torbreite ist die kürzeste Seite, also ist ihr Gegenwinkel der kleinste und damit spitz.', ok: true },
+          { t: 'Ja, beim Sinussatz gibt es immer zwei Lösungen.', hint: 'Prüfe den stumpfen Kandidaten 180° − 26,9° = 153,1° mit der Winkelsumme.' },
+          { t: 'Ja, weil der Ball weit vom Tor entfernt ist.', hint: 'Die Entfernung allein entscheidet nicht. Welche Seite ist die kürzeste im Dreieck?' }
+        ],
+        hints: ['Der kürzesten Seite liegt der kleinste Winkel gegenüber. Kann der kleinste Winkel stumpf sein?'],
+        done: 'Eindeutig: Der Schusswinkel liegt der kürzesten Seite gegenüber und ist spitz.' }
+    ]
+  },
+  {
+    stage: 2, letter: 'T', title: 'Kurswechsel auf See',
+    story: 'Ein Funkspruch der Küstenwache landet im Archiv. Ein Segelboot hat unterwegs den Kurs gewechselt. Die Küstenwache will wissen, wo es jetzt ist.',
+    given: 'Das Boot fährt vom Hafen H aus 14 km geradeaus bis zur Boje B. Dort ändert es seinen Kurs um 35° nach Steuerbord (rechts) und fährt 9 km weiter bis zum Punkt P. Wie weit ist es jetzt vom Hafen entfernt? Um wie viel Grad weicht die Richtung zu P vom ursprünglichen Kurs ab (Winkel bei H)?',
+    sketch: { draw: 'course',
+      labels: { HB: ['14 km', 'given'], BP: ['9 km', 'given'], HP: ['HP = ?', 'ask'], ext: ['35°', 'given'], B: ['?', 'ask'], H: ['?', 'ask'] },
+      updates: [{ after: 0, key: 'B', t: '145°', st: 'calc' }, { after: 2, key: 'HP', t: 'HP ≈ 21,99 km', st: 'calc' }, { after: 4, key: 'H', t: '≈ 13,6°', st: 'calc' }] },
+    steps: [
+      { type: 'number', tag: 'Ordnen', q: 'Bestimme zuerst den Innenwinkel des Dreiecks HBP bei der Boje B.', answers: [145], tol: 0.1, unit: '°', label: '∠B =',
+        specials: [{ v: 35, tol: 0.1, hint: 'Der 35°-Winkel liegt außen, zwischen der gestrichelten Verlängerung und dem neuen Kurs. Welcher Winkel liegt im Dreieck?' }],
+        hints: ['Skizziere den Kurswechsel. Welcher Winkel liegt im Dreieck?', 'Die Verlängerung des alten Kurses und die Strecke BH bilden zusammen eine gerade Linie (180°).', 'Innenwinkel = 180° − Kursänderung.'],
+        done: 'Innenwinkel bei B = 145°' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Schritt 1: Mit welchem Verfahren berechnest du die Entfernung HP?', method: 'cos', reason: 'sws',
+        mhints: { sin: 'Ist ein vollständiges Paar bekannt? Dem Winkel bei B liegt die gesuchte Strecke HP gegenüber.', rw: RW_HINT },
+        done: 'Schritt 1: Kosinussatz, weil 14 km, 9 km und der eingeschlossene Winkel 145° bekannt sind.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne die Entfernung HP auf zwei Nachkommastellen.', answers: [21.99], tol: 0.1, unit: 'km', label: 'HP =',
+        specials: [{ v: 8.40, tol: 0.1, hint: 'Das Boot ist fast 23 km gefahren und hat nur leicht den Kurs geändert. Kann es nur 8,4 km vom Hafen entfernt sein? Prüfe den Winkel.' }, { v: 483.43, tol: 0.5, hint: 'Das ist HP². Ziehe noch die Wurzel.' }, { v: 7.37, tol: 0.05, hint: RAD }],
+        hints: ['Skizziere den Kurswechsel. Welcher Winkel liegt im Dreieck?', 'HP² = 14² + 9² − 2 · 14 · 9 · cos 145°.', 'cos 145° ist negativ. Der Term −2 · 14 · 9 · cos 145° wird dadurch positiv.'],
+        done: 'HP ≈ 21,99 km' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Schritt 2: Mit welchem Verfahren bestimmst du den Winkel bei H?', method: 'sin', reason: 'paar',
+        also: [['cos', 'sss']], alsoDone: 'Schritt 2: Kosinussatz (SSS) geht auch. Mit dem Paar HP und 145° ist der Sinussatz kürzer.',
+        mhints: { rw: RW_HINT },
+        done: 'Schritt 2: Sinussatz, weil HP und 145° ein vollständiges Paar bilden.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne den Winkel bei H auf eine Nachkommastelle.', answers: [13.58], tol: 0.2, unit: '°', label: '∠H =',
+        specials: [{ v: 0.235, tol: 0.005, hint: INV }, { v: 21.42, tol: 0.2, hint: 'Das ist der Winkel bei P. Gesucht ist der Winkel bei H. Welche Seite liegt ihm gegenüber?' }],
+        hints: ['Für Schritt 2: Welche Seite liegt dem Winkel bei H gegenüber?', 'Dem Winkel bei H liegt die Strecke BP = 9 km gegenüber.', 'sin(∠H) = 9 · sin 145° / 21,99. Wende danach sin⁻¹ an.'],
+        done: 'Winkel bei H ≈ 13,6°' },
+      { type: 'choice', tag: 'Prüfen', q: 'Warum ist der Winkel bei H eindeutig, obwohl der Sinussatz verwendet wurde?',
+        options: [
+          { t: 'Weil das Dreieck mit 145° schon seinen stumpfen Winkel hat. Ein zweiter stumpfer Winkel ist unmöglich.', ok: true },
+          { t: 'Weil 9 km kürzer als 14 km ist.', hint: 'Das stimmt zwar, aber entscheidend ist: Wie viele stumpfe Winkel kann ein Dreieck haben?' },
+          { t: 'Weil der Taschenrechner nur einen Wert ausgibt.', hint: 'Der Taschenrechner gibt immer nur den spitzen Winkel aus. Ob auch der stumpfe passt, musst du selbst prüfen.' }
+        ],
+        hints: ['Prüfe den Kandidaten 180° − 13,6° = 166,4° mit der Winkelsumme.'],
+        done: 'Eindeutig, weil 145° bereits der stumpfe Winkel ist.' }
+    ]
+  },
+  {
+    stage: 3, letter: 'E', title: 'Das Viereck-Grundstück',
+    story: 'Die vorletzte Akte ist ein Bauplan. Das Grundstück ist kein Dreieck, sondern ein Viereck. Eine Grenze fehlt im Grundbuch.',
+    given: 'Das Grundstück ABCD wurde vermessen: AB = 60 m, BC = 45 m, ∠B = 110°, CD = 50 m, ∠D = 95°. Wie lang ist die Grenze AD?',
+    sketch: { draw: 'quad',
+      labels: { AB: ['60 m', 'given'], BC: ['45 m', 'given'], CD: ['50 m', 'given'], DA: ['AD = ?', 'ask'], AC: ['', 'plain'], B: ['110°', 'given'], D: ['95°', 'given'], CAD: ['', 'plain'], ACD: ['', 'plain'] },
+      updates: [{ after: 1, key: 'AC', t: 'AC = ?', st: 'ask' }, { after: 2, key: 'AC', t: 'AC ≈ 86,44 m', st: 'calc' },
+        { after: 4, key: 'CAD', t: '?', st: 'ask' }, { after: 5, key: 'CAD', t: '35,2°', st: 'calc' },
+        { after: 5, key: 'ACD', t: '?', st: 'ask' }, { after: 6, key: 'ACD', t: '49,8°', st: 'calc' },
+        { after: 7, key: 'DA', t: 'AD ≈ 66,29 m', st: 'calc' }] },
+    steps: [
+      { type: 'choice', tag: 'Ordnen', q: 'Die Diagonale AC teilt das Grundstück in zwei Dreiecke. In welchem Teildreieck reichen die Angaben schon für eine Rechnung?',
+        options: [
+          { t: 'im Dreieck ABC', ok: true },
+          { t: 'im Dreieck ACD', hint: 'Im Dreieck ACD kennst du nur CD und ∠D. Von AC und AD ist noch nichts bekannt.' },
+          { t: 'in keinem der beiden', hint: 'Zähle im Dreieck ABC die bekannten Seiten und Winkel.' }
+        ],
+        hints: ['Teile das Viereck entlang der Diagonalen AC.', 'Ein Dreieck ist berechenbar, wenn drei passende Stücke bekannt sind.', 'Im Dreieck ABC kennst du AB, BC und den Winkel bei B dazwischen.'],
+        done: 'Start im Dreieck ABC (SWS).' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Schritt 1: Mit welchem Verfahren berechnest du die Diagonale AC?', method: 'cos', reason: 'sws',
+        mhints: { sin: 'Ist im Dreieck ABC ein vollständiges Paar bekannt? Dem Winkel bei B liegt die gesuchte Diagonale gegenüber.', rw: RW_HINT },
+        done: 'Schritt 1: Kosinussatz im Dreieck ABC.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne die Diagonale AC auf zwei Nachkommastellen.', answers: [86.44], tol: 0.1, unit: 'm', label: 'AC =',
+        specials: [{ v: 61.47, tol: 0.1, hint: 'cos 110° ist negativ. Achte auf das Vorzeichen: Minus mal Minus ergibt Plus.' }, { v: 7471.91, tol: 1, hint: 'Das ist AC². Ziehe noch die Wurzel.' }, { v: 104.97, tol: 0.1, hint: RAD }],
+        hints: ['Teile das Viereck entlang der Diagonalen AC.', 'AC² = 60² + 45² − 2 · 60 · 45 · cos 110°.', 'cos 110° ist negativ, AC wird also länger als bei einem rechten Winkel.'],
+        done: 'AC ≈ 86,44 m' },
+      { type: 'choice', tag: 'Ordnen', q: 'Jetzt im Dreieck ACD: Welcher Winkel liegt der Diagonalen AC gegenüber?',
+        options: [
+          { t: 'der Winkel bei D (95°)', ok: true },
+          { t: 'der Winkel bei A', hint: 'A ist ein Endpunkt von AC. Gegenüber liegt die Ecke, die AC nicht berührt.' },
+          { t: 'der Winkel bei C', hint: 'C ist ein Endpunkt von AC. Welche Ecke des Dreiecks ACD berührt AC nicht?' }
+        ],
+        hints: ['Im Dreieck ACD: Welcher Winkel liegt AC gegenüber?'],
+        done: 'AC und ∠D = 95° bilden ein vollständiges Paar.' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Schritt 2: Mit welchem Verfahren bestimmst du im Dreieck ACD den Winkel bei A (∠CAD)?', method: 'sin', reason: 'paar',
+        mhints: { cos: 'Im Dreieck ACD kennst du AC und CD, aber der bekannte Winkel ∠D liegt nicht zwischen ihnen. Er liegt AC gegenüber.', rw: RW_HINT },
+        done: 'Schritt 2: Sinussatz im Dreieck ACD.' },
+      { type: 'number', tag: 'Rechnen', q: 'Berechne ∠CAD auf eine Nachkommastelle.', answers: [35.19], tol: 0.2, unit: '°', label: '∠CAD =',
+        specials: [{ v: 0.576, tol: 0.005, hint: INV }, { v: 144.81, tol: 0.2, hint: 'Zusammen mit 95° wären das mehr als 180°. Nimm den spitzen Winkel.' }],
+        hints: ['Im Dreieck ACD: Welcher Winkel liegt AC gegenüber, welcher CD?', 'Dem Winkel bei A liegt CD = 50 m gegenüber.', 'sin(∠CAD) = 50 · sin 95° / 86,44. Weil ∠D stumpf ist, ist ∠CAD eindeutig spitz.'],
+        done: '∠CAD ≈ 35,2°' },
+      { type: 'number', tag: 'Ordnen', q: 'Bestimme den Winkel bei C im Dreieck ACD (∠ACD).', answers: [49.81], tol: 0.2, unit: '°', label: '∠ACD =',
+        hints: ['Für AD brauchst du den Winkel bei C im Dreieck ACD.', 'Winkelsumme im Dreieck ACD: 180°.', '∠ACD = 180° − 95° − ∠CAD.'],
+        done: '∠ACD ≈ 49,8°' },
+      { type: 'number', tag: 'Rechnen', q: 'Schritt 3: Berechne die Grenze AD auf zwei Nachkommastellen.', answers: [66.29], tol: 0.1, unit: 'm', label: 'AD =',
+        specials: [{ v: 50, tol: 0.1, hint: 'Das ist CD. Du hast den Winkel bei A eingesetzt. Welcher Winkel liegt AD gegenüber?' }],
+        hints: ['Welcher Winkel liegt AD gegenüber?', 'Dem Winkel ∠ACD ≈ 49,8° liegt AD gegenüber.', 'AD = 86,44 · sin 49,8° / sin 95°.'],
+        done: 'AD ≈ 66,29 m' },
+      { type: 'choice', tag: 'Prüfen', q: 'Warum passte im Dreieck ABC der Kosinussatz, im Dreieck ACD aber der Sinussatz?',
+        options: [
+          { t: 'In ABC lag der bekannte Winkel zwischen den Seiten. In ACD war mit AC und ∠D ein vollständiges Paar bekannt.', ok: true },
+          { t: 'Weil ABC größer ist als ACD.', hint: 'Die Größe des Dreiecks spielt keine Rolle. Entscheidend ist, welche Stücke bekannt sind.' },
+          { t: 'Weil man in jedem Viereck immer erst den Kosinussatz und dann den Sinussatz braucht.', hint: 'Eine feste Reihenfolge gibt es nicht. Wo lag der bekannte Winkel jeweils?' }
+        ],
+        hints: ['Vergleiche, wo in den beiden Dreiecken der bekannte Winkel liegt.'],
+        done: 'SWS in ABC, vollständiges Paar in ACD.' }
+    ]
+  },
+  {
+    stage: 3, letter: 'R', title: 'Die verlorene Drohne',
+    story: 'Die letzte Akte ist ein Notfall. Eine Vermessungsdrohne hat den Funkkontakt verloren. Zwei Bodenstationen haben noch Messwerte gesendet.',
+    given: 'Station A meldet: Abstand zur Drohne 120 m. Die Stationen A und B sind 150 m voneinander entfernt. Station B peilt die Drohne unter 40° zur Strecke BA an. Wie weit ist die Drohne von Station B entfernt?',
+    sketch: { draw: 'drone',
+      labels: { AB: ['150 m', 'given'], B: ['40°', 'given'] } },
+    steps: [
+      { type: 'choice', tag: 'Ordnen', q: 'Welcher Fall liegt vor?',
+        options: [
+          { t: 'SSS: drei Seiten', hint: 'Wie viele Seiten kennst du? Die Entfernung von B zur Drohne ist gesucht.' },
+          { t: 'SWS: zwei Seiten und der eingeschlossene Winkel', hint: 'Liegt der 40°-Winkel bei B zwischen AB und der Strecke A–Drohne? Die Strecke A–Drohne berührt B nicht.' },
+          { t: 'WSW: eine Seite und zwei Winkel', hint: 'Wie viele Winkel kennst du?' },
+          { t: 'SsW: zwei Seiten und ein Winkel, der nicht eingeschlossen ist', ok: true }
+        ],
+        hints: ['Liegt der bekannte Winkel der längeren oder der kürzeren Seite gegenüber?', 'Bekannt sind AB = 150 m, A–Drohne = 120 m und der Winkel bei B.', 'Der Winkel bei B liegt der Strecke A–Drohne gegenüber. Er ist nicht eingeschlossen.'],
+        done: 'SsW: 40° liegt der kürzeren Seite (120 m) gegenüber.' },
+      { type: 'choice', tag: 'Entscheiden', q: 'Berechne den Sinus des Winkels bei der Drohne auf deinem Zettel. Wie viele mögliche Positionen der Drohne gibt es?',
+        options: [
+          { t: '0', hint: 'Keine Lösung gäbe es, wenn der Sinuswert größer als 1 wäre. Ist das hier so?' },
+          { t: '1', hint: 'Prüfe auch den stumpfen Winkel 180° − ∠C. Passt er mit 40° noch in die Winkelsumme?' },
+          { t: '2', ok: true }
+        ],
+        hints: ['Liegt der bekannte Winkel der längeren oder der kürzeren Seite gegenüber?', 'sin(∠C) = 150 · sin 40° / 120 ≈ 0,80. Das liegt unter 1.', 'Prüfe auch 180° − ∠C: 40° + 126,5° bleibt unter 180°.'],
+        done: 'Es gibt zwei mögliche Positionen.' },
+      { type: 'decide', tag: 'Entscheiden', q2: 'Mit welchem Verfahren bestimmst du die Winkel bei der Drohne?', method: 'sin', reason: 'paar',
+        mhints: { cos: 'Der Winkel bei B liegt nicht zwischen AB und der 120-m-Strecke. Für den Kosinussatz in der SWS-Form passt das nicht.', rw: RW_HINT },
+        done: 'Sinussatz mit dem Paar 120 m und 40°.' },
+      { type: 'multi', tag: 'Rechnen', q: 'Berechne beide möglichen Entfernungen von Station B zur Drohne auf zwei Nachkommastellen. Die Reihenfolge ist egal.', answers: [186.35, 43.47], tol: 0.1, unit: 'm', labels: ['BC₁ =', 'BC₂ ='], reveal: true,
+        specials: [{ v: 53.46, tol: 0.2, hint: 'Das ist ein Winkel bei der Drohne. Gesucht sind die Entfernungen BC.' }, { v: 126.54, tol: 0.2, hint: 'Das ist ein Winkel bei der Drohne. Gesucht sind die Entfernungen BC.' },
+          { v: 86.54, tol: 0.2, hint: 'Das ist ein Winkel bei A. Berechne damit BC über den Sinussatz.' }, { v: 13.46, tol: 0.2, hint: 'Das ist ein Winkel bei A. Berechne damit BC über den Sinussatz.' }, { v: 0.803, tol: 0.005, hint: INV }],
+        hints: ['Prüfe auch 180° − ∠C.', 'Fall 1: ∠C₁ ≈ 53,5°, dann ∠A₁ ≈ 86,5°. Fall 2: ∠C₂ ≈ 126,5°, dann ∠A₂ ≈ 13,5°.', 'Berechne für jeden Fall den Winkel bei A und dann BC = 120 · sin(∠A) / sin 40°.'],
+        done: 'BC₁ ≈ 186,35 m und BC₂ ≈ 43,47 m' },
+      { type: 'choice', tag: 'Modellieren', q: 'Neue Meldung von Station B: „Die Drohne ist mehr als 100 m entfernt.“ Wo ist die Drohne?',
+        options: [
+          { t: 'BC ≈ 186,35 m', ok: true },
+          { t: 'BC ≈ 43,47 m', hint: 'Station B meldet mehr als 100 m. Passt 43,47 m dazu?' },
+          { t: 'nicht entscheidbar', hint: 'Vergleiche beide Werte mit der Meldung von Station B. Nur einer ist größer als 100 m.' }
+        ],
+        hints: ['Die Mathematik liefert zwei Möglichkeiten. Die Sachsituation wählt aus.'],
+        done: 'Die Drohne ist ≈ 186,35 m von Station B entfernt.' },
+      { type: 'choice', tag: 'Prüfen', q: 'Warum liefert der Sinussatz hier zwei Winkel?',
+        options: [
+          { t: 'Weil sin x = sin(180° − x) gilt und beide Winkel zusammen mit 40° unter 180° bleiben.', ok: true },
+          { t: 'Weil die Drohne fliegt und sich bewegt.', hint: 'Es geht um die Mathematik: Welche zwei Winkel haben denselben Sinuswert?' },
+          { t: 'Weil der Taschenrechner zwei Werte anzeigt.', hint: 'Der Taschenrechner zeigt nur einen Wert. Den zweiten musst du selbst finden.' }
+        ],
+        hints: ['Vergleiche sin 53,5° und sin 126,5°.'],
+        done: 'sin x = sin(180° − x), und beide Winkel passen in die Winkelsumme.' }
+    ]
+  }
+];
+const WORD = ROOMS.map(r => r.letter).join('');
+const ASSESS = [
+  'Ich erkenne, ob der Sinus- oder der Kosinussatz passt.',
+  'Ich finde in einer Sachsituation den richtigen Innenwinkel.',
+  'Ich erkenne, wann es zwei Lösungen geben kann.'
+];
+const SCALE = ['trifft nicht zu', 'trifft eher nicht zu', 'trifft eher zu', 'trifft voll zu'];
+
+/* ===== Spielstand ===== */
+const KEY = 'escape-sinus-kosinussatz-teil2-v1';
+const N = ROOMS.length;
+function fresh() {
+  return { started: false, room: 0, step: 0, roomDone: false, stageSeen: {}, lvl: {}, alt: {},
+    fails: Array(N).fill(0), tips: Array(N).fill(0), start: null, end: null, assess: {} };
+}
+let S = fresh();
+try {
+  const raw = localStorage.getItem(KEY);
+  if (raw) {
+    const o = JSON.parse(raw);
+    if (o && typeof o.room === 'number' && Array.isArray(o.fails)) S = Object.assign(fresh(), o);
+  }
+} catch (e) { /* ohne Speicher weiterspielen */ }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignorieren */ } }
+
+let TEACHER = false;
+try { TEACHER = new URLSearchParams(location.search).get('lehrkraft') === '1'; } catch (e) { /* ohne URL-Parameter */ }
+
+/* ===== Hilfsfunktionen ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function parseNum(s) {
+  s = String(s).trim().replace(/\s+/g, '').replace(/(cm|km|m|°|grad)$/i, '').replace(',', '.');
+  if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
+  return parseFloat(s);
+}
+const near = (x, v, t) => Math.abs(x - v) <= t + 1e-9;
+
+/* ===== Skizzen ===== */
+const W = 360, H = 250;
+function fitter(pts, pad) {
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+  const s = Math.min((W - 2 * pad) / (maxx - minx || 1), (H - 2 * pad) / (maxy - miny || 1));
+  const ox = (W - (maxx - minx) * s) / 2 - minx * s;
+  const oy = (H - (maxy - miny) * s) / 2 - miny * s;
+  return p => [ox + p[0] * s, H - (oy + p[1] * s)];
+}
+const sub = (p, q) => [p[0] - q[0], p[1] - q[1]];
+const unit = v => { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; };
+const at = (p, v, k) => [p[0] + v[0] * k, p[1] + v[1] * k];
+const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2];
+const f1 = n => n.toFixed(1);
+const line = (p, q, cls, extra) => `<line class="${cls}" x1="${f1(p[0])}" y1="${f1(p[1])}" x2="${f1(q[0])}" y2="${f1(q[1])}" stroke-linecap="round"${extra || ''}/>`;
+const text = (p, t, cls, anchor) => t ? `<text class="${cls}" x="${f1(p[0])}" y="${f1(p[1])}" text-anchor="${anchor || 'middle'}" dominant-baseline="middle">${esc(t)}</text>` : '';
+const vert = (p, t) => `<text class="t-vert" x="${f1(p[0])}" y="${f1(p[1])}" text-anchor="middle" dominant-baseline="middle">${esc(t)}</text>`;
+
+function arcAt(V, P1, P2, r, cls) {
+  const u = unit(sub(P1, V)), w = unit(sub(P2, V));
+  const s = at(V, u, r), e = at(V, w, r);
+  const sweep = (u[0] * w[1] - u[1] * w[0]) > 0 ? 1 : 0;
+  return `<path class="${cls}" d="M${f1(s[0])} ${f1(s[1])} A${r} ${r} 0 0 ${sweep} ${f1(e[0])} ${f1(e[1])}"/>`;
+}
+function angleLabel(V, P1, P2, deg, txt, cls, rmax) {
+  if (!txt) return '';
+  const u = unit(sub(P1, V)), w = unit(sub(P2, V));
+  const bis = unit([u[0] + w[0], u[1] + w[1]]);
+  const half = txt.length * 4 + 6;
+  const r = Math.min(rmax || 90, Math.max(38, half / Math.sin(deg * D2R / 2) + 8));
+  return text(at(V, bis, r), txt, cls);
+}
+/* Beschriftung einer Strecke, vom Mittelpunkt C der Figur weg nach außen versetzt */
+function sideLabel(p, q, cen, txt, cls) {
+  if (!txt) return '';
+  const M = mid(p, q);
+  const n = unit(sub(M, cen));
+  return text(at(M, n, 12 + Math.abs(n[0]) * (txt.length * 4) + Math.abs(n[1]) * 6), txt, cls);
+}
+
+/* Allgemeines Dreieck mit Ecken A (links), B (rechts), C (oben) */
+function drawTri(sk, L, pickMode, wrongSide) {
+  const a1 = sk.A * D2R, b1 = sk.B * D2R, g = Math.PI - a1 - b1;
+  const bl = Math.sin(b1) / Math.sin(g);
+  const raw = [[0, 0], [1, 0], [bl * Math.cos(a1), bl * Math.sin(a1)]];
+  const extra = sk.goal ? [[-0.35, -0.22], [1.35, 0]] : (sk.island ? [[raw[2][0], raw[2][1] * 1.12]] : []);
+  const map = fitter(raw.concat(extra), 44);
+  const P = raw.map(map);
+  const names = sk.names || ['A', 'B', 'C'];
+  const cen = [(P[0][0] + P[1][0] + P[2][0]) / 3, (P[0][1] + P[1][1] + P[2][1]) / 3];
+  const seg = { a: [1, 2], b: [0, 2], c: [0, 1] };
+  let out = '';
+  if (sk.sea) {
+    out += `<rect class="water" x="0" y="0" width="${W}" height="${f1(Math.max(P[0][1], P[1][1]) - 6)}" opacity=".55"/>`;
+    out += `<text class="t-plain" x="8" y="18">Bergsee</text>`;
+  }
+  if (sk.island) out += `<ellipse class="island" cx="${f1(P[2][0])}" cy="${f1(P[2][1] - 4)}" rx="30" ry="14"/>`;
+  if (sk.goal) {
+    out += `<rect class="grass" x="0" y="0" width="${W}" height="${f1(P[0][1])}"/>`;
+    out += line(map([-0.35, 0]), map([1.35, 0]), 's-plain');
+    const d = map([0, -0.22])[1] - P[0][1];
+    out += `<rect class="net" x="${f1(P[0][0])}" y="${f1(P[0][1])}" width="${f1(P[1][0] - P[0][0])}" height="${f1(d)}" stroke-dasharray="2 3"/>`;
+    out += `<circle class="post" cx="${f1(P[0][0])}" cy="${f1(P[0][1])}" r="4"/><circle class="post" cx="${f1(P[1][0])}" cy="${f1(P[1][1])}" r="4"/>`;
+    out += `<circle cx="${f1(P[2][0])}" cy="${f1(P[2][1])}" r="6" fill="var(--sheet)" stroke="var(--ink)" stroke-width="1.5"/>`;
+  }
+  for (const k of ['a', 'b', 'c']) {
+    const [i, j] = seg[k];
+    const st = L(k)[1];
+    const ln = line(P[i], P[j], 'vis s-' + st);
+    if (pickMode) {
+      out += `<g class="pickable${wrongSide === k ? ' wrong' : ''}" data-side="${k}" tabindex="0" role="button" aria-label="Seite ${esc(names[i])}${esc(names[j])}">${ln}${line(P[i], P[j], '', ' stroke="transparent" stroke-width="24"')}</g>`;
+    } else out += ln;
+  }
+  for (const k of ['a', 'b', 'c']) {
+    const [i, j] = seg[k];
+    const [txt, st] = L(k);
+    out += sideLabel(P[i], P[j], cen, txt, 't-' + st);
+  }
+  const angDeg = [sk.A, sk.B, 180 - sk.A - sk.B];
+  ['A', 'B', 'C'].forEach((v, i) => {
+    const V = P[i], P1 = P[(i + 1) % 3], P2 = P[(i + 2) % 3];
+    const [txt, st] = L(v);
+    out += arcAt(V, P1, P2, 20, 'arc-' + st);
+    out += angleLabel(V, P1, P2, angDeg[i], txt, 't-' + st);
+    const u = unit(sub(P1, V)), w = unit(sub(P2, V));
+    const q = at(V, unit([u[0] + w[0], u[1] + w[1]]), sk.goal && i === 2 ? -22 : -18);
+    out += vert(q, names[i]);
+  });
+  return out;
+}
+
+/* Raum 6: Kurswechsel mit Verlängerung und Außenwinkel */
+function drawCourse(sk, L) {
+  const Hh = [0, 0], B = [14, 0], P = [14 + 9 * Math.cos(-35 * D2R), 9 * Math.sin(-35 * D2R)], E = [20, 0];
+  const map = fitter([Hh, B, P, E, [0, 1.6], [0, -6.4]], 36);
+  const h = map(Hh), b = map(B), p = map(P), e = map(E);
+  const cen = [(h[0] + b[0] + p[0]) / 3, (h[1] + b[1] + p[1]) / 3];
+  let out = `<rect class="water" x="0" y="0" width="${W}" height="${H}" opacity=".45"/>`;
+  out += line(b, e, 's-faint');
+  out += text([e[0] - 2, e[1] - 12], 'alter Kurs', 't-plain', 'end');
+  const [thp, shp] = L('HP');
+  out += line(h, p, 's-' + shp);
+  out += line(h, b, 's-given') + line(b, p, 's-given');
+  out += text([mid(h, b)[0], h[1] - 14], L('HB')[0], 't-' + L('HB')[1]);
+  out += text([mid(b, p)[0] + 30, mid(b, p)[1] - 4], L('BP')[0], 't-' + L('BP')[1], 'start');
+  out += text([mid(h, p)[0] - 8, mid(h, p)[1] + 22], thp, 't-' + shp);
+  // Außenwinkel 35° zwischen Verlängerung und neuem Kurs
+  out += arcAt(b, e, p, 34, 'arc-' + L('ext')[1]);
+  out += angleLabel(b, e, p, 35, L('ext')[0], 't-' + L('ext')[1], 54);
+  // Innenwinkel bei B
+  out += arcAt(b, h, p, 16, 'arc-' + L('B')[1]);
+  out += text([b[0] - 14, b[1] - 18], L('B')[0], 't-' + L('B')[1]);
+  // Winkel bei H
+  out += arcAt(h, b, p, 46, 'arc-' + L('H')[1]);
+  const hb = unit([unit(sub(b, h))[0] + unit(sub(p, h))[0], unit(sub(b, h))[1] + unit(sub(p, h))[1]]);
+  out += text(at(h, hb, 72), L('H')[0], 't-' + L('H')[1]);
+  out += vert([h[0] - 12, h[1]], 'H');
+  out += vert([b[0] - 2, b[1] + 20], 'B') + vert([p[0] + 14, p[1] + 4], 'P');
+  out += `<circle cx="${f1(b[0])}" cy="${f1(b[1])}" r="4" fill="var(--brass)"/>`;
+  out += text([W - 8, H - 12], 'Steuerbord = rechts', 't-plain', 'end');
+  return out;
+}
+
+/* Raum 7: Viereck ABCD mit Diagonale AC */
+function drawQuad(sk, L, stepIdx) {
+  const A = [0, 0], B = [60, 0];
+  const C = [60 + 45 * Math.cos(70 * D2R), 45 * Math.sin(70 * D2R)];
+  const dirAC = Math.atan2(C[1], C[0]), cad = Math.asin(50 * Math.sin(95 * D2R) / Math.hypot(C[0], C[1]));
+  const ad = Math.hypot(C[0], C[1]) * Math.sin((85 * D2R) - cad) / Math.sin(95 * D2R);
+  const D = [ad * Math.cos(dirAC + cad), ad * Math.sin(dirAC + cad)];
+  const map = fitter([A, B, C, D], 40);
+  const a = map(A), b = map(B), c = map(C), d = map(D);
+  const cen = [(a[0] + b[0] + c[0] + d[0]) / 4, (a[1] + b[1] + c[1] + d[1]) / 4];
+  const pts = ps => ps.map(p => f1(p[0]) + ',' + f1(p[1])).join(' ');
+  let out = '';
+  const done = S.roomDone && S.room === 6;
+  if (!done && stepIdx <= 2) out += `<polygon class="hl1" points="${pts([a, b, c])}"/>`;
+  if (!done && stepIdx >= 3) out += `<polygon class="hl2" points="${pts([a, c, d])}"/>`;
+  const [tac, sac] = L('AC');
+  out += line(a, c, sac === 'plain' ? 's-faint' : 's-' + sac);
+  out += line(a, b, 's-given') + line(b, c, 's-given') + line(c, d, 's-given') + line(d, a, 's-' + L('DA')[1]);
+  for (const [k, p, q] of [['AB', a, b], ['BC', b, c], ['CD', c, d], ['DA', d, a]]) out += sideLabel(p, q, cen, L(k)[0], 't-' + L(k)[1]);
+  if (tac) { const m = mid(a, c); out += text(at(m, unit(sub(d, m)), 20), tac, 't-' + sac); }
+  out += arcAt(b, a, c, 18, 'arc-given') + angleLabel(b, a, c, 110, L('B')[0], 't-given');
+  out += arcAt(d, c, a, 18, 'arc-given') + angleLabel(d, c, a, 95, L('D')[0], 't-given');
+  if (L('CAD')[0]) out += arcAt(a, c, d, 30, 'arc-' + L('CAD')[1]) + angleLabel(a, c, d, 35, L('CAD')[0], 't-' + L('CAD')[1], 56);
+  if (L('ACD')[0]) out += arcAt(c, d, a, 24, 'arc-' + L('ACD')[1]) + angleLabel(c, d, a, 50, L('ACD')[0], 't-' + L('ACD')[1], 50);
+  const vl = (p, t) => { const n = unit(sub(p, cen)); return vert(at(p, n, 16), t); };
+  out += vl(a, 'A') + vl(b, 'B') + vl(c, 'C') + vl(d, 'D');
+  return out;
+}
+
+/* Raum 8: Peilstrahl von B, Kreis um A mit 120 m, zwei mögliche Drohnenpositionen */
+function drawDrone(sk, L, stepIdx) {
+  const A = [0, 0], B = [150, 0], dir = [Math.cos(140 * D2R), Math.sin(140 * D2R)];
+  const C1 = at(B, dir, 186.35), C2 = at(B, dir, 43.47), R = at(B, dir, 225);
+  const arcPts = [];
+  for (let t = 2; t <= 100; t += 2) arcPts.push([120 * Math.cos(t * D2R), 120 * Math.sin(t * D2R)]);
+  const map = fitter([A, B, R, [-20, 0]].concat(arcPts), 34);
+  const a = map(A), b = map(B), c1 = map(C1), c2 = map(C2), r = map(R);
+  const revealIdx = ROOMS[7].steps.findIndex(s => s.reveal);
+  const done = S.roomDone && S.room === 7;
+  const revealed = done || stepIdx > revealIdx;
+  const decided = done || stepIdx > revealIdx + 1;
+  const anim = !done && stepIdx === revealIdx + 1;
+  let out = '';
+  out += line(b, r, 's-faint');
+  out += line(a, b, 's-given') + text([mid(a, b)[0], a[1] + 18], L('AB')[0], 't-given');
+  out += arcAt(b, a, r, 26, 'arc-given') + angleLabel(b, a, r, 40, L('B')[0], 't-given', 44);
+  out += vert([a[0] - 4, a[1] + 18], 'A') + vert([b[0] + 4, b[1] + 18], 'B');
+  if (!revealed) {
+    out += text([r[0] + 4, r[1] + 14], 'Peilstrahl', 't-plain', 'start');
+    out += text([W - 8, 24], 'Abstand A–Drohne: 120 m', 't-given', 'end');
+    out += text([W - 8, 44], 'Wo trifft dieser Abstand', 't-plain', 'end');
+    out += text([W - 8, 62], 'den Peilstrahl?', 't-plain', 'end');
+    return out;
+  }
+  const g = anim ? ' grow' : '', fd = anim ? ' fade' : '';
+  out += `<polyline class="s-faint${g}" points="${arcPts.map(map).map(p => f1(p[0]) + ',' + f1(p[1])).join(' ')}"/>`;
+  out += line(a, c1, 's-given' + fd) + line(a, c2, 's-given' + fd);
+  out += text([mid(a, c1)[0] - 10, mid(a, c1)[1]], '120 m', 't-given' + fd, 'end');
+  out += text([mid(a, c2)[0] - 4, mid(a, c2)[1] - 12], '120 m', 't-given' + fd);
+  const cls1 = decided ? 'dot ok' : 'dot', cls2 = decided ? 'dot off' : 'dot';
+  out += `<circle class="${cls1}${fd}" cx="${f1(c1[0])}" cy="${f1(c1[1])}" r="6"/><circle class="${cls2}${fd}" cx="${f1(c2[0])}" cy="${f1(c2[1])}" r="6"/>`;
+  out += text([c1[0] - 12, c1[1] - 6], 'C₁', 't-vert' + fd, 'end');
+  out += text([c2[0] + 12, c2[1] - 20], 'C₂', 't-vert' + fd, 'start');
+  out += text([c1[0] - 12, c1[1] + 16], 'BC₁ ≈ 186,35 m', (decided ? 't-calc' : 't-ask') + fd, 'end');
+  out += text([c2[0] + 18, c2[1] - 2], 'BC₂ ≈ 43,47 m', (decided ? 't-plain' : 't-ask') + fd, 'start');
+  return out;
+}
+
+const DRAW = { tri: drawTri, course: drawCourse, quad: drawQuad, drone: drawDrone };
+
+function labelFn(R) {
+  const lab = Object.assign({}, R.sketch.labels);
+  const progress = S.roomDone ? Infinity : S.step;
+  (R.sketch.updates || []).forEach(u => { if (progress > u.after) lab[u.key] = [u.t, u.st || 'calc']; });
+  return k => lab[k] || ['', 'plain'];
+}
+function sketchHTML(R, step, wrongSide) {
+  if (!R.sketch) return '';
+  const L = labelFn(R);
+  const pick = !S.roomDone && step && step.type === 'pick';
+  const body = R.sketch.draw === 'tri' ? drawTri(R.sketch, L, pick, wrongSide) : DRAW[R.sketch.draw](R.sketch, L, S.roomDone ? Infinity : S.step);
+  return `<figure class="sketch"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Skizze zur Akte">${body}</svg>
+    <figcaption><span class="key"><i></i>gegeben</span><span class="key"><i class="ask"></i>gesucht</span><span class="key"><i class="calc"></i>berechnet</span><span>nicht maßstäblich</span></figcaption></figure>`;
+}
+
+/* ===== Schritte rendern ===== */
+const TIP = '<button class="btn ghost tip" data-act="tip" type="button">Ich brauche einen Tipp</button>';
+function stepHTML(step, idx) {
+  const id = `s${S.room}-${idx}`;
+  let inner = `<span class="tag t-${step.tag}">${step.tag}</span>`;
+  if (step.type === 'pick') {
+    inner += `<p class="q">${esc(step.q)}</p><div class="actions">${TIP}</div>`;
+  } else if (step.type === 'choice') {
+    inner += `<fieldset><legend>${esc(step.q)}</legend>` +
+      step.options.map((o, i) => `<label class="opt"><input type="radio" name="${id}" id="${id}-o${i}" value="${i}"><span>${esc(o.t)}</span></label>`).join('') +
+      `</fieldset><div class="actions"><button class="btn" data-act="check" type="button">Prüfen</button>${TIP}</div>`;
+  } else if (step.type === 'decide') {
+    inner += `<fieldset><legend>${esc(step.q2 || 'Mit welchem Verfahren geht es weiter?')}</legend>` +
+      METHODS.map((o, i) => `<label class="opt"><input type="radio" name="${id}-m" id="${id}-m${i}" value="${o.k}"><span>${esc(o.t)}</span></label>`).join('') +
+      `</fieldset><fieldset><legend>Warum passt dieses Verfahren?</legend>` +
+      REASONS.map((o, i) => `<label class="opt"><input type="radio" name="${id}-r" id="${id}-r${i}" value="${o.k}"><span>${esc(o.t)}</span></label>`).join('') +
+      `</fieldset><div class="actions"><button class="btn" data-act="check" type="button">Prüfen</button>${TIP}</div>`;
+  } else if (step.type === 'number' || step.type === 'multi') {
+    const labels = step.type === 'multi' ? step.labels : [step.label];
+    inner += `<p class="q">${esc(step.q)}</p><div class="num-row">` +
+      labels.map((l, i) => `<div class="num-field"><label for="${id}-n${i}">${esc(l)}</label><input id="${id}-n${i}" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"><span class="unit">${esc(step.unit)}</span></div>`).join('') +
+      `</div><div class="actions"><button class="btn" data-act="check" type="button">Prüfen</button>${TIP}</div>`;
+  } else if (step.type === 'sort') {
+    inner += `<p class="q">${esc(step.q)}</p><div class="pool" data-zone="" aria-label="Noch nicht zugeordnet"></div><div class="zones">` +
+      step.zones.map(z => `<div class="zone" data-zone="${z.k}" role="button" tabindex="0" aria-label="Fach ${esc(z.t)}"><span class="zt">${esc(z.t)}</span><div class="zone-list"></div></div>`).join('') +
+      `</div><div class="actions"><button class="btn" data-act="check" type="button" disabled>Prüfen</button><span class="sortinfo" style="color:var(--muted);font-size:15px"></span>${TIP}</div>`;
+  }
+  inner += `<div class="fb" role="status" aria-live="polite"></div>`;
+  return `<li class="step active" id="active-step">${inner}</li>`;
+}
+
+function renderLocks() {
+  const pad = '<svg viewBox="0 0 18 20" aria-hidden="true"><path d="M4 9V6a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="2" y="9" width="14" height="10" rx="2" fill="currentColor"/></svg>';
+  $('#locks').innerHTML = ROOMS.map((r, i) => {
+    const open = i < S.room || (i === S.room && S.roomDone);
+    const cur = S.started && i === S.room && !S.roomDone;
+    return `<li class="lock${open ? ' open' : ''}${cur ? ' current' : ''}" data-stage="${r.stage}"><span class="num"><span class="lbl">Akte </span>${i + 1}</span><span class="face">${open ? r.letter : pad}</span><span class="sr">${STAGES[r.stage].name}, ${open ? 'geöffnet, Buchstabe ' + r.letter : (cur ? 'aktuelle Akte' : 'verschlossen')}</span></li>`;
+  }).join('');
+  const curStage = S.room < N ? ROOMS[S.room].stage : 0;
+  $('#stagekey').innerHTML = [1, 2, 3].map(k => `<span class="${S.started && k === curStage ? 'cur' : ''}"><i style="background:var(--st${k})"></i>${STAGES[k].name}: ${STAGES[k].title}</span>`).join('');
+}
+
+function renderRoom(focus) {
+  const R = ROOMS[S.room];
+  const step = R.steps[S.step];
+  let list = '';
+  for (let i = 0; i < Math.min(S.step, R.steps.length); i++) {
+    const st = R.steps[i];
+    const doneTxt = S.alt[S.room + '-' + i] && st.alsoDone ? st.alsoDone : st.done;
+    list += `<li class="step done"><span class="check" aria-hidden="true">✓</span><span class="tag t-${st.tag}">${st.tag}</span><span>${esc(doneTxt)}</span></li>`;
+  }
+  if (!S.roomDone) list += stepHTML(step, S.step);
+  const last = S.room === N - 1;
+  const reveal = S.roomDone ? `<div class="reveal"><div class="letter" aria-hidden="true">${R.letter}</div>
+      <div style="display:grid;gap:8px;flex:1;min-width:200px"><p><strong>Das Zahlenschloss springt auf.</strong> Dein Buchstabe: ${R.letter}. Merk ihn dir gut.</p>
+      <div><button class="btn" data-act="next" type="button">${last ? 'Zum Ausgang' : 'Nächste Akte'}</button></div></div></div>` : '';
+  $('#main').innerHTML = `<div class="room-head"><div class="eyebrow">Akte ${S.room + 1} von ${N}<span class="stg stg${R.stage}">${STAGES[R.stage].name} · ${STAGES[R.stage].title}</span></div><h2>${esc(R.title)}</h2></div>
+    <p class="story">${esc(R.story)}</p><p class="given">${esc(R.given)}</p>
+    <div class="room-body" style="${R.sketch ? '' : 'grid-template-columns:minmax(0,1fr)'}">${sketchHTML(R, step)}<div style="display:grid;gap:14px;min-width:0"><ol class="steps">${list}</ol>${reveal}</div></div>`;
+  wireRoom(R, step);
+  if (focus) {
+    let t;
+    if (S.roomDone) t = $('[data-act="next"]');
+    else if (step.type === 'pick') t = $('.pickable');
+    else t = $('#active-step input, #active-step .card, #active-step button');
+    if (t) t.focus({ preventScroll: false });
+  }
+}
+
+/* ===== Rückmeldung und Hinweise ===== */
+function feedback(kind, html) {
+  const fb = $('#active-step .fb');
+  if (!fb) return;
+  fb.className = 'fb ' + kind;
+  fb.innerHTML = html;
+}
+const hintList = step => step.hints || DECIDE_HINTS;
+const stepKey = () => S.room + '-' + S.step;
+/* Fehlversuch: nächste Hinweisstufe; ein gezielter Hinweis zu einem typischen Fehlwert hat Vorrang. Ab Stufe 3 bleibt der letzte Hinweis sichtbar. */
+function fail(step, special, prefix) {
+  const k = stepKey(), list = hintList(step);
+  S.fails[S.room]++;
+  S.lvl[k] = Math.min((S.lvl[k] || 0) + 1, list.length);
+  save();
+  const lvl = S.lvl[k];
+  let html = prefix ? esc(prefix) + ' ' : '';
+  if (special) {
+    html += `<b>Hinweis:</b> ${esc(special)}`;
+    if (lvl >= 3 && list.length >= 3) html += `<span class="more"><b>Hinweis ${lvl} von ${list.length}:</b> ${esc(list[lvl - 1])}</span>`;
+  } else html += `<b>Hinweis ${lvl} von ${list.length}:</b> ${esc(list[lvl - 1])}`;
+  feedback('hint', html);
+  return S.fails[S.room];
+}
+/* Freiwilliger Tipp: öffnet die nächste Hinweisstufe und zählt als genutzter Tipp */
+function tip(step) {
+  const k = stepKey(), list = hintList(step);
+  const cur = S.lvl[k] || 0;
+  if (cur < list.length) { S.lvl[k] = cur + 1; S.tips[S.room]++; save(); }
+  const lvl = S.lvl[k];
+  feedback('hint', `<b>Hinweis ${lvl} von ${list.length}:</b> ${esc(list[lvl - 1])}` + (cur >= list.length ? '<span class="more">Mehr Hinweise gibt es für diesen Schritt nicht.</span>' : ''));
+}
+function solved(alt) {
+  if (alt) S.alt[stepKey()] = true;
+  const R = ROOMS[S.room];
+  S.step++;
+  if (S.step >= R.steps.length) S.roomDone = true;
+  save();
+  renderLocks();
+  renderRoom(true);
+}
+
+function wireRoom(R, step) {
+  const nextBtn = $('[data-act="next"]');
+  if (nextBtn) nextBtn.addEventListener('click', () => {
+    S.room++; S.step = 0; S.roomDone = false;
+    save(); renderAll(true);
+  });
+  if (S.roomDone) return;
+  const btn = $('#active-step [data-act="check"]');
+  const tipBtn = $('#active-step [data-act="tip"]');
+  if (tipBtn) tipBtn.addEventListener('click', () => tip(step));
+
+  if (step.type === 'pick') {
+    document.querySelectorAll('.pickable').forEach(g => {
+      const act = () => {
+        const k = g.dataset.side;
+        if (k === step.answer) { solved(); return; }
+        document.querySelectorAll('.pickable').forEach(x => x.classList.toggle('wrong', x === g));
+        fail(step, null, `${g.getAttribute('aria-label')} ist es nicht.`);
+      };
+      g.addEventListener('click', act);
+      g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    });
+  }
+
+  if (step.type === 'choice') btn.addEventListener('click', () => {
+    const sel = $('#active-step input:checked');
+    if (!sel) { feedback('info', 'Wähle zuerst eine Antwort aus.'); return; }
+    const o = step.options[+sel.value];
+    if (o.ok) solved(); else fail(step, o.hint);
+  });
+
+  if (step.type === 'decide') btn.addEventListener('click', () => {
+    const m = $('#active-step input[name$="-m"]:checked'), r = $('#active-step input[name$="-r"]:checked');
+    if (!m || !r) { feedback('info', 'Wähle ein Verfahren und eine Begründung aus.'); return; }
+    if (m.value === step.method && r.value === step.reason) { solved(); return; }
+    if ((step.also || []).some(([mm, rr]) => mm === m.value && rr === r.value)) { solved(true); return; }
+    const altMethod = (step.also || []).some(([mm]) => mm === m.value);
+    if (m.value !== step.method && !altMethod) fail(step, (step.mhints && step.mhints[m.value]) || null);
+    else fail(step, 'Das Verfahren passt. Passt deine Begründung wirklich zu den bekannten Größen?');
+  });
+
+  if (step.type === 'number' || step.type === 'multi') {
+    const inputs = [...document.querySelectorAll('#active-step input')];
+    inputs.forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); }));
+    btn.addEventListener('click', () => {
+      const vals = inputs.map(i => parseNum(i.value));
+      if (vals.some(v => Number.isNaN(v))) { feedback('info', 'Gib in jedes Feld eine Zahl ein, zum Beispiel 12,5.'); return; }
+      if (step.type === 'number') {
+        if (near(vals[0], step.answers[0], step.tol)) { solved(); return; }
+        const sp = (step.specials || []).find(s => near(vals[0], s.v, s.tol));
+        fail(step, sp ? sp.hint : null);
+      } else {
+        const left = step.answers.slice();
+        let hits = 0;
+        const rest = [];
+        vals.forEach(v => { const j = left.findIndex(a => near(v, a, step.tol)); if (j >= 0) { left.splice(j, 1); hits++; } else rest.push(v); });
+        if (hits === step.answers.length) { solved(); return; }
+        const sp = (step.specials || []).find(s => rest.some(v => near(v, s.v, s.tol)));
+        fail(step, sp ? sp.hint : null, hits === 1 ? 'Einer deiner Werte stimmt.' : '');
+      }
+    });
+  }
+
+  if (step.type === 'sort') {
+    const place = {};
+    let selected = null;
+    const pool = $('#active-step .pool');
+    const info = $('#active-step .sortinfo');
+    const cardEls = step.cards.map((c, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'card'; b.textContent = c.t; b.draggable = true;
+      b.setAttribute('aria-pressed', 'false'); b.dataset.i = i;
+      b.addEventListener('click', () => {
+        // Ist schon eine andere Karte gewählt und liegt diese Karte in einem Fach, kommt die gewählte Karte in dasselbe Fach.
+        if (selected !== null && selected !== i && place[i]) { drop(place[i], selected); return; }
+        selected = selected === i ? null : i;
+        cardEls.forEach((x, j) => x.setAttribute('aria-pressed', String(j === selected)));
+        document.querySelectorAll('.zone').forEach(z => z.classList.toggle('target', selected !== null));
+        if (selected !== null) info.textContent = 'Jetzt ein Fach antippen.';
+      });
+      b.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(i)); });
+      pool.appendChild(b);
+      return b;
+    });
+    // Reihenfolge der Karten mischen, damit sie nicht in der Reihenfolge der Fächer liegen
+    [3, 0, 4, 1, 2].forEach(i => pool.appendChild(cardEls[i]));
+    const update = () => {
+      cardEls.forEach((b, i) => {
+        const z = place[i];
+        const host = z ? $(`.zone[data-zone="${z}"] .zone-list`) : pool;
+        if (b.parentElement !== host) host.appendChild(b);
+        b.setAttribute('aria-pressed', 'false');
+      });
+      selected = null;
+      document.querySelectorAll('.zone').forEach(z => z.classList.remove('target'));
+      const n = Object.keys(place).length;
+      btn.disabled = n < step.cards.length;
+      info.textContent = n < step.cards.length ? `${step.cards.length - n} Auftrag/Aufträge noch nicht zugeordnet.` : 'Alle zugeordnet. Prüfe deine Zuordnung.';
+    };
+    const drop = (zk, i) => { if (zk) place[i] = zk; else delete place[i]; cardEls[i].classList.remove('wrong'); update(); };
+    document.querySelectorAll('#active-step [data-zone]').forEach(z => {
+      const zk = z.dataset.zone;
+      const act = e => { if (selected === null) return; if (e && e.target.closest('.card') && e.target.closest('.card') !== cardEls[selected]) return; drop(zk, selected); };
+      z.addEventListener('click', e => { if (e.target.closest('.card')) return; act(e); });
+      z.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === z) { e.preventDefault(); act(e); } });
+      z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+      z.addEventListener('dragleave', () => z.classList.remove('over'));
+      z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('over'); const i = +e.dataTransfer.getData('text/plain'); if (!Number.isNaN(i)) drop(zk, i); });
+    });
+    update();
+    btn.addEventListener('click', () => {
+      const wrong = step.cards.map((c, i) => !c.z.includes(place[i]));
+      const w = wrong.filter(Boolean).length;
+      if (w === 0) { solved(); return; }
+      cardEls.forEach((b, i) => b.classList.toggle('wrong', wrong[i]));
+      fail(step, null, (w === 1 ? 'Ein Auftrag liegt noch im falschen Fach' : `${w} Aufträge liegen noch im falschen Fach`) + ' (gestrichelt markiert).');
+    });
+  }
+}
+
+/* ===== Start, Stufenkarten, Ausgang, Abschluss ===== */
+function renderStart() {
+  $('#main').innerHTML = `<div class="intro">
+    <div class="room-head"><div class="eyebrow">Teil 2 · Ein neuer Auftrag</div><h2>Das Archiv</h2></div>
+    <p>Aus dem alten Vermessungsamt bist du entkommen. Jetzt kommt die Amtsleiterin mit einem Auftrag: Im Archiv liegen acht unerledigte Vermessungsakten, jede mit einem Zahlenschloss gesichert.</p>
+    <p>Wer eine Akte richtig bearbeitet, erhält einen Buchstaben. Die acht Buchstaben ergeben eine alte Berufsbezeichnung, und die ist das Passwort für den Ausgang.</p>
+    <p>In jeder Akte gehst du so vor wie in Teil 1:</p>
+    <ul><li><strong>Ordnen:</strong> Was ist gegeben, was liegt sich gegenüber?</li><li><strong>Entscheiden:</strong> Sinussatz oder Kosinussatz, und warum?</li><li><strong>Rechnen:</strong> Ergebnis eingeben, Komma oder Punkt sind beide erlaubt.</li><li><strong>Prüfen:</strong> Ist das Ergebnis plausibel?</li></ul>
+    <p style="color:var(--muted)">Bei falschen Antworten bekommst du Hinweise, nie die Lösung. Die Formelkarte unten hilft dir jederzeit. Du brauchst einen Taschenrechner im Gradmaß (DEG).</p>
+    <div><button class="btn" id="go" type="button">Archiv betreten</button></div></div>`;
+  $('#go').addEventListener('click', () => { S.started = true; S.start = Date.now(); save(); renderAll(true); });
+}
+function renderStage(k) {
+  const st = STAGES[k];
+  const rooms = ROOMS.map((r, i) => r.stage === k ? i + 1 : null).filter(Boolean);
+  $('#main').innerHTML = `<div class="intro stagecard s${k}">
+    <div class="room-head"><div class="eyebrow">Akten ${rooms[0]}–${rooms[rooms.length - 1]}</div></div>
+    <p class="bigstage">${st.name}: ${st.title}</p>
+    <p>${esc(st.text)}</p>
+    <div><button class="btn" id="go" type="button">Los geht's</button></div></div>`;
+  $('#go').addEventListener('click', () => { S.stageSeen[k] = true; save(); renderAll(true); });
+}
+function renderDoor() {
+  $('#main').innerHTML = `<div class="room-head"><div class="eyebrow">Ausgang</div><h2>Das Passwort</h2></div>
+    <p class="story">Alle acht Akten sind bearbeitet. Am Ausgang des Archivs verlangt ein Terminal ein Passwort: die alte Berufsbezeichnung für Landvermesser. Setze deine Buchstaben in der Reihenfolge der Akten zusammen.</p>
+    <div class="letters" aria-label="Deine Buchstaben">${ROOMS.map(r => `<span>${r.letter}</span>`).join('')}</div>
+    <div class="actions"><label for="word" class="sr">Lösungswort</label><input id="word" class="word-input" autocomplete="off" spellcheck="false" placeholder="Passwort"><button class="btn" id="open" type="button">Ausgang öffnen</button></div>
+    <div class="fb" id="doorfb" role="status" aria-live="polite"></div>`;
+  const go = () => {
+    const v = $('#word').value.trim().toUpperCase().replace(/\s+/g, '');
+    if (v === WORD) { S.end = Date.now(); save(); renderAll(true); return; }
+    const fb = $('#doorfb'); fb.className = 'fb hint';
+    fb.innerHTML = '<b>Hinweis:</b> Lies die Buchstaben von Akte 1 bis Akte 8 der Reihe nach.';
+  };
+  $('#open').addEventListener('click', go);
+  $('#word').addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+}
+
+function mmss(ms) { const s = Math.max(0, Math.floor(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+
+function resultText() {
+  const lines = ['Escape-Spiel „Das Vermessungsamt – Teil 2“: Ergebnis', `Zeit: ${mmss(S.end - S.start)} min`, ''];
+  [1, 2, 3].forEach(k => {
+    lines.push(`${STAGES[k].name} – ${STAGES[k].title}`);
+    ROOMS.forEach((r, i) => { if (r.stage === k) lines.push(`  Akte ${i + 1} (${r.title}): ${S.fails[i]} Fehlversuch(e), ${S.tips[i]} Tipp(s)`); });
+  });
+  lines.push('', 'Selbsteinschätzung:');
+  ASSESS.forEach((a, i) => lines.push(`  ${a} – ${S.assess[i] != null ? SCALE[S.assess[i]] : 'nicht angegeben'}`));
+  return lines.join('\n');
+}
+function copyText(t, done) {
+  const fallback = () => {
+    const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove(); done(ok);
+  };
+  try { navigator.clipboard.writeText(t).then(() => done(true), fallback); } catch (e) { fallback(); }
+}
+
+function renderEnd() {
+  const tf = S.fails.reduce((a, b) => a + b, 0), tt = S.tips.reduce((a, b) => a + b, 0);
+  const rows = [1, 2, 3].map(k => ROOMS.map((r, i) => r.stage !== k ? '' :
+    `<tr><td class="stage-cell">${STAGES[k].name}</td><td>${i + 1}</td><td>${esc(r.title)}</td><td class="n">${S.fails[i]}</td><td class="n">${S.tips[i]}</td></tr>`).join('')).join('');
+  $('#main').innerHTML = `<div class="room-head"><div class="eyebrow">Geschafft</div><h2>GEOMETER – Auftrag erledigt!</h2></div>
+    <p class="story">Der Ausgang öffnet sich. „Geometer“ ist der alte Name für Landvermesser, und das bist du jetzt auch. Du hast alle acht Akten in <strong>${mmss(S.end - S.start)}</strong> Minuten bearbeitet, mit <strong>${tf}</strong> Fehlversuch${tf === 1 ? '' : 'en'} und <strong>${tt}</strong> Tipp${tt === 1 ? '' : 's'}.</p>
+    <div class="tbl-wrap"><table><thead><tr><th>Stufe</th><th>Akte</th><th>Thema</th><th style="text-align:right">Fehlversuche</th><th style="text-align:right">Tipps</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="story" style="color:var(--muted)">Die Akten mit vielen Fehlversuchen oder Tipps zeigen, was du noch einmal üben solltest. Zeig diese Übersicht gern deiner Lehrkraft.</p>
+    <div class="scale"><h3 style="font-family:var(--font-display);margin:0">Wie sicher bist du jetzt?</h3>
+    ${ASSESS.map((a, i) => `<div class="item"><span>${esc(a)}</span><div class="opts" role="radiogroup" aria-label="${esc(a)}">${SCALE.map((s, j) => `<label><input type="radio" name="as${i}" value="${j}"${S.assess[i] === j ? ' checked' : ''}> ${s}</label>`).join('')}</div></div>`).join('')}
+    </div>
+    <div class="actions"><button class="btn" id="copy" type="button">Ergebnis als Text kopieren</button><span id="copyinfo" role="status" style="color:var(--muted);font-size:15px"></span></div>`;
+  document.querySelectorAll('.scale input').forEach(inp => inp.addEventListener('change', () => {
+    S.assess[inp.name.slice(2)] = +inp.value; save();
+  }));
+  $('#copy').addEventListener('click', () => copyText(resultText(), ok => {
+    $('#copyinfo').textContent = ok ? 'Kopiert. Du kannst den Text jetzt einfügen.' : 'Kopieren hat nicht geklappt. Mach bitte ein Foto der Tabelle.';
+  }));
+}
+
+function renderAll(focus) {
+  renderLocks();
+  if (!S.started) renderStart();
+  else if (S.room < N && S.step === 0 && !S.roomDone && !S.stageSeen[ROOMS[S.room].stage]) renderStage(ROOMS[S.room].stage);
+  else if (S.room < N) { renderRoom(focus); return; }
+  else if (!S.end) renderDoor();
+  else renderEnd();
+  if (focus) $('#main').focus();
+}
+
+/* Lehrkraft-Modus (?lehrkraft=1): Sprung zu jeder Akte zum Testen, ohne Lösungen */
+function wireTeacher() {
+  if (!TEACHER) return;
+  $('#teacherBox').innerHTML = `<label class="teacher">Lehrkraft: <select id="jump" aria-label="Zu Akte springen"><option value="">Akte wählen …</option>${ROOMS.map((r, i) => `<option value="${i}">Akte ${i + 1}: ${esc(r.title)}</option>`).join('')}<option value="${N}">Ausgang</option></select></label>`;
+  $('#jump').addEventListener('change', e => {
+    if (e.target.value === '') return;
+    const i = +e.target.value;
+    S.started = true; if (!S.start) S.start = Date.now();
+    S.room = i; S.step = 0; S.roomDone = false; S.end = null;
+    S.stageSeen = { 1: true, 2: true, 3: true };
+    save(); renderAll(true);
+    e.target.value = '';
+  });
+}
+
+/* Neustart mit Rückfrage auf der Seite */
+function wireRestart() {
+  const box = $('#restartBox');
+  box.innerHTML = '<button class="btn ghost" id="restart" type="button">Neu starten</button>';
+  $('#restart').addEventListener('click', () => {
+    box.innerHTML = '<span class="confirm">Fortschritt löschen? <button class="btn ghost" id="yes" type="button">Ja, neu starten</button><button class="btn ghost" id="no" type="button">Abbrechen</button></span>';
+    $('#yes').addEventListener('click', () => { S = fresh(); save(); wireRestart(); renderAll(true); });
+    $('#no').addEventListener('click', wireRestart);
+  });
+}
+
+function tick() { $('#clock').textContent = S.start ? mmss((S.end || Date.now()) - S.start) : '00:00'; }
+setInterval(tick, 1000);
+tick();
+wireTeacher();
+wireRestart();
+renderAll(false);
+})();
+</script>
+</body>
+</html>
